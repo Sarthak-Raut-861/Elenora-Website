@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120" fill="none">
+  <!-- Shield icon -->
+  <g transform="translate(10, 8)">
+    <!-- Shield outline (navy) -->
+    <path d="M50 4 L90 18 L90 55 C90 78 70 95 50 102 C30 95 10 78 10 55 L10 18 Z"
+      fill="none" stroke="#1a3a6b" stroke-width="7" stroke-linejoin="round"/>
+    <!-- Bar chart inside shield (teal) -->
+    <rect x="30" y="52" width="10" height="28" rx="2" fill="#00c9a7"/>
+    <rect x="45" y="38" width="10" height="42" rx="2" fill="#00c9a7"/>
+    <rect x="60" y="28" width="10" height="52" rx="2" fill="#1a3a6b" opacity="0.35"/>
+    <!-- Tall teal bar (center-right) -->
+    <rect x="60" y="28" width="10" height="52" rx="2" fill="#00c9a7"/>
+  </g>
+  <!-- "Asset" text (navy) -->
+  <text x="118" y="72" font-family="Inter, Arial, sans-serif" font-size="46" font-weight="700" fill="#1a3a6b">Asset</text>
+  <!-- "Track" text (teal) -->
+  <text x="258" y="72" font-family="Inter, Arial, sans-serif" font-size="46" font-weight="700" fill="#00c9a7">Track</text>
+</svg>

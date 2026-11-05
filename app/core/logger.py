@@ -1,10 +1,14 @@
 import logging
 import os
+import sys
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
 
-LOG_DIR = "logs"
-os.makedirs(LOG_DIR, exist_ok=True)
+LOG_DIR = "/tmp/logs" if os.getenv("VERCEL") else "logs"
+try:
+    os.makedirs(LOG_DIR, exist_ok=True)
+except OSError:
+    pass
 
 # Rotating file handler setup
 LOG_FILE = os.path.join(LOG_DIR, "app.log")
@@ -27,14 +31,17 @@ console_formatter = logging.Formatter(
 
 
 def _create_rotating_handler(log_file, max_bytes=5*1024*1024, backup_count=5, formatter=detailed_formatter):
-    """Helper function to create rotating file handlers."""
-    handler = RotatingFileHandler(
-        log_file,
-        maxBytes=max_bytes,
-        backupCount=backup_count
-    )
-    handler.setFormatter(formatter)
-    return handler
+    """Helper function to create rotating file handlers, gracefully falling back on read-only environments."""
+    try:
+        handler = RotatingFileHandler(
+            log_file,
+            maxBytes=max_bytes,
+            backupCount=backup_count
+        )
+        handler.setFormatter(formatter)
+        return handler
+    except (OSError, PermissionError):
+        return logging.NullHandler()
 
 
 def _setup_logger(name, log_file=None, level=logging.INFO):
@@ -48,7 +55,7 @@ def _setup_logger(name, log_file=None, level=logging.INFO):
         return logger_instance
     
     # Console handler (all loggers)
-    console_handler = logging.StreamHandler()
+    console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(console_formatter)
     logger_instance.addHandler(console_handler)
     

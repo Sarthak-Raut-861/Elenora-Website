@@ -1,6 +1,6 @@
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -9,7 +9,7 @@ from app.core.exceptions import register_exception_handlers
 from app.core.logger import logger
 from app.core.rate_limiter import setup_rate_limiter
 from app.db.base import Base
-from app.db.session import engine
+from app.db.session import engine, AsyncSessionLocal
 
 # Import all models to ensure metadata registration
 import app.models
@@ -33,13 +33,75 @@ from app.api import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: ensure upload folder exists and tables are initialized
-    os.makedirs("uploads", exist_ok=True)
-    os.makedirs("logs", exist_ok=True)
+    # Startup: ensure upload folder exists safely
+    upload_dir = "/tmp/uploads" if os.getenv("VERCEL") else "uploads"
+    try:
+        os.makedirs(upload_dir, exist_ok=True)
+    except OSError:
+        pass
+
+    try:
+        os.makedirs("/tmp/logs" if os.getenv("VERCEL") else "logs", exist_ok=True)
+    except OSError:
+        pass
 
     # Initialize tables if needed (especially for SQLite or initial setup)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    # Auto-seed default administrative users if database is newly initialized
+    try:
+        from app.models.user import User, UserRole
+        from app.core.security import hash_password
+        from sqlalchemy.future import select
+
+        async with AsyncSessionLocal() as db:
+            # 1. Primary Admin User
+            res_admin = await db.execute(select(User).where(User.email == settings.ADMIN_EMAIL.lower()))
+            if not res_admin.scalars().first():
+                admin_user = User(
+                    full_name=settings.ADMIN_FULL_NAME,
+                    email=settings.ADMIN_EMAIL.lower(),
+                    password_hash=hash_password(settings.ADMIN_PASSWORD),
+                    role=UserRole.admin,
+                    is_active=True,
+                )
+                db.add(admin_user)
+                await db.commit()
+                logger.info(f"Initialized default admin account: {settings.ADMIN_EMAIL}")
+
+            # 2. Sarthak Admin User
+            sarthak_email = "sarthak1484@gmail.com"
+            res_sarthak = await db.execute(select(User).where(User.email == sarthak_email))
+            if not res_sarthak.scalars().first():
+                sarthak_user = User(
+                    full_name="Sarthak",
+                    email=sarthak_email,
+                    password_hash=hash_password(settings.ADMIN_PASSWORD),
+                    role=UserRole.admin,
+                    is_active=True,
+                )
+                db.add(sarthak_user)
+                await db.commit()
+                logger.info(f"Initialized admin account: {sarthak_email}")
+
+            # 3. Dry Cleaner User
+            cleaner_email = "cleaner@elanora-luxury.com"
+            res_cleaner = await db.execute(select(User).where(User.email == cleaner_email))
+            if not res_cleaner.scalars().first():
+                cleaner_user = User(
+                    full_name="Fabric Master Santosh",
+                    email=cleaner_email,
+                    password_hash=hash_password("CleanerPass123!"),
+                    role=UserRole.dry_cleaner,
+                    phone="+91 98765 43210",
+                    is_active=True,
+                )
+                db.add(cleaner_user)
+                await db.commit()
+                logger.info(f"Initialized dry cleaner account: {cleaner_email}")
+    except Exception as e:
+        logger.error(f"Note on startup user provisioning: {e}")
 
     logger.info("Elenora Luxury Rental Application initialized successfully.")
     yield
@@ -68,6 +130,7 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -80,10 +143,12 @@ setup_rate_limiter(app)
 register_exception_handlers(app)
 
 # 4. Static Files for Asset Media
-os.makedirs("uploads", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
-
-from fastapi import APIRouter
+upload_static_dir = "/tmp/uploads" if os.getenv("VERCEL") else "uploads"
+try:
+    os.makedirs(upload_static_dir, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=upload_static_dir), name="uploads")
+except Exception:
+    pass
 
 # 5. Mount API Routers under /api prefix for unified deployment routing
 api_router = APIRouter(prefix="/api")
@@ -134,4 +199,3 @@ async def root():
 @app.get("/health", tags=["Health"])
 async def health_check():
     return {"status": "healthy"}
-

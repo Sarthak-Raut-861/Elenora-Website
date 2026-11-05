@@ -112,6 +112,13 @@ async def lifespan(app: FastAPI):
                 db.add(cleaner_user)
                 await db.commit()
                 logger.info(f"Initialized dry cleaner account: {cleaner_email}")
+
+            # 4. Auto-seed catalog categories, rental plans, cleaners, and pieces if empty
+            try:
+                from app.db.seed import seed
+                await seed()
+            except Exception as se:
+                logger.warning(f"Catalog seeding note: {se}")
     except Exception as e:
         logger.error(f"Note on startup user provisioning: {e}")
 

@@ -642,21 +642,21 @@ export function HomePage() {
               position: "relative",
               borderRadius: 16,
               overflow: "hidden",
-              minHeight: 460,
+              minHeight: 440,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               textAlign: "center",
               padding: "60px 24px",
-              backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.88) 100%), url('/royal-bridal-banner-wide.jpg')`,
+              backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.85) 100%), url('/royal-bridal-banner-wide.jpg')`,
               backgroundSize: "cover",
               backgroundPosition: "center 22%",
-              border: "1px solid rgba(201,163,74,0.35)",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.85)",
+              border: "1px solid rgba(201,163,74,0.3)",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.8)",
               marginBottom: 44,
             }}
           >
-            <div style={{ maxWidth: 780, background: "rgba(11,11,11,0.55)", backdropFilter: "blur(6px)", padding: "36px 30px", borderRadius: 16, border: "1px solid rgba(201,163,74,0.25)" }}>
+            <div style={{ maxWidth: 760 }}>
               <span style={{ fontSize: "0.74rem", letterSpacing: "0.26em", textTransform: "uppercase", color: "#C9A34A", fontWeight: 700, display: "block", marginBottom: 12 }}>
                 CURATED ATELIER ARCHIVE
               </span>
@@ -669,19 +669,20 @@ export function HomePage() {
                   letterSpacing: "0.08em",
                   margin: "0 0 16px",
                   textTransform: "uppercase",
+                  textShadow: "0 4px 24px rgba(0,0,0,0.9)",
                 }}
               >
                 The Royal Bridal Collection
               </h2>
-              <p style={{ fontSize: "1.02rem", color: "rgba(255,255,255,0.9)", lineHeight: 1.65, margin: "0 0 28px", maxWidth: 640, marginLeft: "auto", marginRight: "auto" }}>
-                Handcrafted velvet lehengas, heirloom zardozi embroidery, and molten gold accents designed for grand wedding ceremonies and timeless regal bridal celebrations.
+              <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.88)", lineHeight: 1.6, margin: "0 0 28px", maxWidth: 640, marginLeft: "auto", marginRight: "auto", textShadow: "0 2px 14px rgba(0,0,0,0.9)" }}>
+                Handcrafted velvet lehengas, heirloom zardozi embroidery and molten gold accents designed for grand wedding festivities and modern regal celebrations.
               </p>
               <button
                 onClick={() => navigate("/assets?category=Bridal+wear")}
                 className="btn-rose-primary"
                 style={{ padding: "13px 40px", fontSize: "0.85rem", letterSpacing: "0.15em", textTransform: "uppercase" }}
               >
-                Explore Bridal Collection →
+                Explore The Edit →
               </button>
             </div>
           </div>

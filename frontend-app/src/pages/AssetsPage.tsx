@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -102,6 +102,34 @@ export function AssetsPage() {
 
     return matchesSearch && matchesCategory && matchesType;
   });
+
+  // Group assets by piece name & category so that multiple physical units show as 1 clean product card
+  const groupedProducts = useMemo(() => {
+    const map = new Map<string, any>();
+    for (const asset of filteredAssets) {
+      const key = `${asset.name.trim().toLowerCase()}__${asset.category_id}`;
+      if (!map.has(key)) {
+        map.set(key, {
+          groupKey: key,
+          name: asset.name,
+          category_id: asset.category_id,
+          primaryAsset: asset,
+          units: [],
+          availableUnits: [],
+          availableStock: 0,
+          totalStock: 0,
+        });
+      }
+      const prod = map.get(key)!;
+      prod.units.push(asset);
+      prod.totalStock += 1;
+      if (asset.status === "available" && !asset.is_in_dry_cleaning && asset.is_active) {
+        prod.availableUnits.push(asset);
+        prod.availableStock += 1;
+      }
+    }
+    return Array.from(map.values());
+  }, [filteredAssets]);
 
   return (
     <div style={{ background: "var(--color-bg-primary)", minHeight: "100vh", padding: "36px 16px 64px", color: "#FFFFFF" }}>
@@ -306,15 +334,18 @@ export function AssetsPage() {
 
         {/* Cards Grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 26 }}>
-          {filteredAssets.map((asset) => {
+          {groupedProducts.map((prod: any) => {
+            const asset = prod.primaryAsset;
             const isRentable = (asset.listing_type || "both") !== "buy";
             const isBuyable = (asset.listing_type || "both") !== "rent";
             const buyPrice = asset.buy_price ? asset.buy_price.toLocaleString("en-IN") : "8,999";
             const rentPrice = asset.rental_price ? asset.rental_price.toLocaleString("en-IN") : "2,499";
+            const isOutOfStock = prod.availableStock === 0;
+            const targetUnitForBooking = prod.availableUnits[0] || asset;
 
             return (
               <motion.div
-                key={asset.id}
+                key={prod.groupKey}
                 whileHover={{ y: -6 }}
                 transition={{ duration: 0.25 }}
                 className="card-elanora"
@@ -323,20 +354,21 @@ export function AssetsPage() {
                   flexDirection: "column",
                   overflow: "hidden",
                   boxShadow: "0 10px 30px rgba(0,0,0,0.6)",
+                  opacity: isOutOfStock ? 0.75 : 1,
                 }}
               >
                 {/* Product Photo */}
                 <div style={{ position: "relative", height: 340, overflow: "hidden", background: "#111" }}>
                   <img
                     src={asset.image_url ?? undefined}
-                    alt={asset.name}
+                    alt={prod.name}
                     style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.5s ease" }}
                     onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
                     onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                   />
 
                   {/* Section Badge */}
-                  <div style={{ position: "absolute", top: 14, left: 14, zIndex: 5 }}>
+                  <div style={{ position: "absolute", top: 14, left: 14, zIndex: 5, display: "flex", flexDirection: "column", gap: 6 }}>
                     <span
                       style={{
                         padding: "4px 12px",
@@ -351,6 +383,41 @@ export function AssetsPage() {
                     >
                       {asset.listing_type === "rent" ? "Rent Vault" : asset.listing_type === "buy" ? "Buy to Own" : "Buy | Rent"}
                     </span>
+
+                    {/* Dynamic Stock Indicator Badge */}
+                    {isOutOfStock ? (
+                      <span
+                        style={{
+                          padding: "3px 10px",
+                          fontSize: "0.68rem",
+                          fontWeight: 700,
+                          borderRadius: "9999px",
+                          background: "rgba(239, 68, 68, 0.9)",
+                          color: "#FFFFFF",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          display: "inline-block",
+                        }}
+                      >
+                        ● Out of Stock
+                      </span>
+                    ) : (
+                      <span
+                        style={{
+                          padding: "3px 10px",
+                          fontSize: "0.68rem",
+                          fontWeight: 700,
+                          borderRadius: "9999px",
+                          background: "rgba(34, 197, 94, 0.9)",
+                          color: "#000000",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                          display: "inline-block",
+                        }}
+                      >
+                        ● {prod.availableStock} in Stock
+                      </span>
+                    )}
                   </div>
 
                   {/* Wishlist Heart */}
@@ -383,11 +450,14 @@ export function AssetsPage() {
                         fontSize: "1.15rem",
                         color: "#FFFFFF",
                         fontWeight: 600,
-                        marginBottom: 6,
+                        marginBottom: 4,
                       }}
                     >
-                      {asset.name}
+                      {prod.name}
                     </h3>
+                    <div style={{ fontSize: "0.72rem", color: "#C9A34A", marginBottom: 10, fontWeight: 600 }}>
+                      Sizes: {asset.sizes || "XS, S, M, L, XL"}
+                    </div>
                     <p style={{ fontSize: "0.8rem", color: "var(--color-text-muted)", marginBottom: 16, lineHeight: 1.5 }}>
                       {asset.description ? asset.description.slice(0, 75) + "..." : "Exclusive couture piece tailored for celebrations."}
                     </p>
@@ -438,11 +508,24 @@ export function AssetsPage() {
                     <div style={{ display: "flex", gap: 10 }}>
                       {isRentable && (
                         <button
-                          onClick={() => setSelectedAssetForBooking(asset)}
+                          onClick={() => {
+                            if (!isOutOfStock) {
+                              setSelectedAssetForBooking(targetUnitForBooking);
+                            } else {
+                              alert("This couture piece is currently out of stock for rentals.");
+                            }
+                          }}
+                          disabled={isOutOfStock}
                           className="btn-rose-primary"
-                          style={{ flex: 1, padding: "10px 14px", fontSize: "0.82rem" }}
+                          style={{
+                            flex: 1,
+                            padding: "10px 14px",
+                            fontSize: "0.82rem",
+                            opacity: isOutOfStock ? 0.5 : 1,
+                            cursor: isOutOfStock ? "not-allowed" : "pointer",
+                          }}
                         >
-                          Rent Now
+                          {isOutOfStock ? "Out of Stock" : "Rent Now"}
                         </button>
                       )}
 
@@ -452,7 +535,7 @@ export function AssetsPage() {
                           className="btn-rose-primary"
                           style={{ flex: 1, padding: "10px 14px", fontSize: "0.82rem" }}
                         >
-                          Buy Now
+                          {isOutOfStock ? "Out of Stock" : "Buy Now"}
                         </button>
                       )}
 

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -112,6 +112,20 @@ export function AssetBookingModal({
   const [error, setError] = useState('');
   const [calendarMonth, setCalendarMonth] = useState(() => toDateOnly(new Date()));
 
+  // Size selection for rental piece
+  const availableSizes = useMemo(() => {
+    if (!asset?.sizes) return ['XS', 'S', 'M', 'L', 'XL'];
+    return asset.sizes.split(',').map((s) => s.trim()).filter(Boolean);
+  }, [asset?.sizes]);
+
+  const [selectedSize, setSelectedSize] = useState<string>('');
+
+  useEffect(() => {
+    if (availableSizes.length > 0 && !selectedSize) {
+      setSelectedSize(availableSizes[0]);
+    }
+  }, [availableSizes, selectedSize]);
+
   // 1. Fetch rental plans (public endpoint)
   const plansQuery = useQuery({
     queryKey: ['plans'],
@@ -213,6 +227,7 @@ export function AssetBookingModal({
         requested_asset_id: asset.id,
         aadhaar_number: aadhaarClean,
         pan_number: panClean,
+        size: selectedSize || undefined,
       });
     },
     onSuccess: () => {
@@ -471,9 +486,42 @@ export function AssetBookingModal({
                 )}
               </AnimatePresence>
 
+              {/* Garment Size Selection */}
+              <div>
+                <FieldLabel icon={Sparkles}>1. Select Garment Size</FieldLabel>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {availableSizes.map((sz) => {
+                    const isSelected = selectedSize === sz;
+                    return (
+                      <button
+                        key={sz}
+                        type="button"
+                        onClick={() => setSelectedSize(sz)}
+                        style={{
+                          minWidth: '46px',
+                          height: '38px',
+                          padding: '0 12px',
+                          borderRadius: '8px',
+                          border: isSelected ? '1.5px solid #C9A34A' : '1px solid #333333',
+                          background: isSelected ? '#C9A34A' : '#181818',
+                          color: isSelected ? '#0B0B0B' : '#FFFFFF',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          boxShadow: isSelected ? '0 0 12px rgba(201, 163, 74, 0.35)' : 'none',
+                        }}
+                      >
+                        {sz}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Rental Plan Selector */}
               <div>
-                <FieldLabel icon={Tag}>1. Select Duration Plan</FieldLabel>
+                <FieldLabel icon={Tag}>2. Select Duration Plan</FieldLabel>
                 {plansQuery.isLoading ? (
                   <div style={{ height: 42, background: '#222222', borderRadius: '8px' }} />
                 ) : (
@@ -532,7 +580,7 @@ export function AssetBookingModal({
 
               {/* KYC Verification Inputs */}
               <div>
-                <FieldLabel icon={ShieldCheck}>2. Verification Documents (KYC)</FieldLabel>
+                <FieldLabel icon={ShieldCheck}>3. Verification Documents (KYC)</FieldLabel>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   {/* Aadhaar */}
                   <div>

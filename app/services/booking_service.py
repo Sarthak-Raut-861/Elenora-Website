@@ -105,12 +105,14 @@ async def create_booking(db: AsyncSession, current_user: User, data: BookingCrea
     await db.flush()
 
     # 6. Add tracking event
+    size_str = f"Size: {data.size}" if getattr(data, "size", None) else ""
     _log_tracking_event(
         db,
         booking_id=booking.id,
         event_type="booking_confirmed",
-        description=f"Your booking #{booking.id} has been created and confirmed",
-        created_by=current_user.id
+        description=f"Your booking #{booking.id} has been created and is pending concierge approval" + (f" ({size_str})" if size_str else ""),
+        created_by=current_user.id,
+        meta=f"Rental Booking | {size_str}".strip(" |")
     )
 
     await db.commit()
@@ -119,17 +121,31 @@ async def create_booking(db: AsyncSession, current_user: User, data: BookingCrea
 
 
 async def create_buy_order(db: AsyncSession, current_user: User, data: BuyOrderCreate) -> Booking:
-    # 1. Fetch asset
+    # 1. Fetch asset or any available unit of this product
     asset_result = await db.execute(select(Asset).where(Asset.id == data.asset_id))
     asset = asset_result.scalars().first()
     if not asset or not asset.is_active:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Piece not found or retired from manifest")
 
+    # If this specific unit is not available, check for any alternative in-stock unit of the same piece
     if asset.status != AssetStatus.available or asset.is_in_dry_cleaning:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This couture piece is currently reserved, on rent, or undergoing sanitization"
+        alt_result = await db.execute(
+            select(Asset).where(
+                Asset.name.ilike(asset.name),
+                Asset.category_id == asset.category_id,
+                Asset.is_active == True,
+                Asset.status == AssetStatus.available,
+                Asset.is_in_dry_cleaning == False,
+            )
         )
+        alt_asset = alt_result.scalars().first()
+        if alt_asset:
+            asset = alt_asset
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"'{asset.name}' is currently out of stock."
+            )
 
     # 2. Get or create Direct Purchase plan
     plan_result = await db.execute(select(RentalPlan).where(RentalPlan.name == "Direct Purchase (Buy to Own)"))
@@ -190,13 +206,18 @@ async def create_buy_order(db: AsyncSession, current_user: User, data: BuyOrderC
     # 7. Add tracking event
     size_str = f"Size: {data.size}" if data.size else "Tailored Fit"
     color_str = f"Color: {data.color}" if data.color else "Signature Shade"
+    meta_info = f"Buy Order | {size_str} | {color_str}"
+    if data.contact_phone:
+        meta_info += f" | Phone: {data.contact_phone}"
+    if data.shipping_address:
+        meta_info += f" | Address: {data.shipping_address}"
     _log_tracking_event(
         db,
         booking_id=booking.id,
         event_type="buy_order_placed",
         description=f"Purchase order confirmed for {asset.name} ({size_str}, {color_str}) — ₹{purchase_price:,.2f}",
         created_by=current_user.id,
-        meta=f"Buy Order | {size_str} | {color_str}"
+        meta=meta_info
     )
 
     await db.commit()

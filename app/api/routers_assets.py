@@ -16,7 +16,7 @@ from app.db.session import get_db
 from app.models.asset import Asset, AssetStatus
 from app.models.category import Category
 from app.models.user import User, UserRole
-from app.schemas.asset import AssetCreate, AssetUpdate, AssetResponse
+from app.schemas.asset import AssetCreate, AssetUpdate, AssetResponse, AssetStockAdd
 
 router = APIRouter(prefix="/assets", tags=["assets"])
 
@@ -248,6 +248,29 @@ async def update_asset(
         asset.gallery_images = data.gallery_images
 
     db.add(asset)
+
+    # If update_all_units is requested, sync common product properties across all units of this style
+    if getattr(data, 'update_all_units', False):
+        sister_result = await db.execute(
+            select(Asset).where(
+                Asset.name.ilike(asset.name),
+                Asset.category_id == asset.category_id,
+                Asset.id != asset.id
+            )
+        )
+        for sister in sister_result.scalars().all():
+            if data.name is not None: sister.name = data.name
+            if data.description is not None: sister.description = data.description
+            if data.image_url is not None: sister.image_url = data.image_url
+            if data.category_id is not None: sister.category_id = data.category_id
+            if data.listing_type is not None: sister.listing_type = data.listing_type
+            if data.buy_price is not None: sister.buy_price = data.buy_price
+            if data.rental_price is not None: sister.rental_price = data.rental_price
+            if data.sizes is not None: sister.sizes = data.sizes
+            if data.color_variants is not None: sister.color_variants = data.color_variants
+            if data.gallery_images is not None: sister.gallery_images = data.gallery_images
+            db.add(sister)
+
     await db.commit()
     await db.refresh(asset)
     
@@ -296,3 +319,104 @@ async def delete_asset(
     await db.flush()
     await db.delete(asset)
     await db.commit()
+
+
+# POST /assets/{asset_id}/add-stock - admin adds additional units to an existing product style
+@router.post("/{asset_id}/add-stock", response_model=list[AssetResponse], status_code=status.HTTP_201_CREATED)
+@limiter.limit("20/minute")
+async def add_asset_stock(
+    asset_id: int,
+    request: Request,
+    data: AssetStockAdd,
+    current_user: User = Depends(require_roles([UserRole.admin])),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(Asset).where(Asset.id == asset_id))
+    asset = result.scalars().first()
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+
+    slug = re.sub(r'\s+', '-', asset.name.strip().upper())
+    slug = re.sub(r'[^A-Z0-9-]', '', slug)
+
+    result = await db.execute(
+        select(func.count()).where(Asset.asset_code.like(f"{slug}-%"))
+    )
+    existing_count = result.scalar()
+
+    created_assets = []
+    for i in range(data.quantity):
+        asset_code = generate_asset_code(asset.name, existing_count + i + 1)
+        new_asset = Asset(
+            asset_code=asset_code,
+            name=asset.name,
+            description=asset.description,
+            image_url=asset.image_url,
+            category_id=asset.category_id,
+            status=AssetStatus.available,
+            listing_type=asset.listing_type,
+            buy_price=asset.buy_price,
+            rental_price=asset.rental_price,
+            sizes=asset.sizes,
+            color_variants=asset.color_variants,
+            gallery_images=asset.gallery_images,
+        )
+        db.add(new_asset)
+        created_assets.append(new_asset)
+
+    await db.commit()
+    for a in created_assets:
+        await db.refresh(a)
+
+    asset_logger.info(f"Added {len(created_assets)} units to {asset.name} by {current_user.email}")
+    return created_assets
+
+
+# DELETE /assets/group/{asset_id} - admin hard deletes all units of this product piece
+@router.delete("/group/{asset_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_asset_group(
+    asset_id: int,
+    current_user: User = Depends(require_roles([UserRole.admin])),
+    db: AsyncSession = Depends(get_db)
+):
+    from app.models.allocations import Allocation
+    from app.models.bookings import Booking
+    from app.models.dry_cleaning import DryCleaningRequest
+
+    result = await db.execute(select(Asset).where(Asset.id == asset_id))
+    target = result.scalars().first()
+    if not target:
+        raise HTTPException(status_code=404, detail="Asset not found")
+
+    group_result = await db.execute(
+        select(Asset).where(
+            Asset.name.ilike(target.name),
+            Asset.category_id == target.category_id
+        )
+    )
+    units = group_result.scalars().all()
+
+    for unit in units:
+        bookings_result = await db.execute(
+            select(Booking).where(Booking.requested_asset_id == unit.id)
+        )
+        for booking in bookings_result.scalars().all():
+            booking.requested_asset_id = None
+
+        allocs_result = await db.execute(
+            select(Allocation).where(Allocation.asset_id == unit.id)
+        )
+        for alloc in allocs_result.scalars().all():
+            await db.delete(alloc)
+
+        dc_result = await db.execute(
+            select(DryCleaningRequest).where(DryCleaningRequest.asset_id == unit.id)
+        )
+        for dc in dc_result.scalars().all():
+            await db.delete(dc)
+
+        await db.flush()
+        await db.delete(unit)
+
+    await db.commit()
+    asset_logger.info(f"Deleted product style group '{target.name}' ({len(units)} units) by {current_user.email}")

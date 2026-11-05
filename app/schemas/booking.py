@@ -22,6 +22,7 @@ class BookingCreate(BaseModel):
     requested_asset_id: Optional[int] = None
     aadhaar_number: str
     pan_number: str
+    size: Optional[str] = None
 
     @field_validator("aadhaar_number", mode="before")
     @classmethod

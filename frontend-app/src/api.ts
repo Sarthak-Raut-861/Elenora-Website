@@ -230,10 +230,15 @@ export const api = {
       sizes?: string | null
       color_variants?: string | null
       gallery_images?: string | null
+      update_all_units?: boolean
     },
   ) => request<Asset>(`/assets/${assetId}`, { method: 'PATCH', token, body: payload }),
   deleteAsset: (token: string, assetId: number) =>
     request<void>(`/assets/${assetId}`, { method: 'DELETE', token }),
+  addAssetStock: (token: string, assetId: number, quantity: number) =>
+    request<Asset[]>(`/assets/${assetId}/add-stock`, { method: 'POST', token, body: { quantity } }),
+  deleteAssetGroup: (token: string, assetId: number) =>
+    request<void>(`/assets/group/${assetId}`, { method: 'DELETE', token }),
 
   listCategories: (token: string | null) => request<Category[]>('/categories/', { token: token || null }),
   createCategory: (token: string, payload: { name: string }) =>
@@ -282,6 +287,7 @@ export const api = {
       requested_asset_id?: number | null
       aadhaar_number?: string
       pan_number?: string
+      size?: string
     }
   ) => request<Booking>('/bookings/', { method: 'POST', token, body: payload }),
   getBlockedDatesForAsset: (token: string | null, assetId: number) =>

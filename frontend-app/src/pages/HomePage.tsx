@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -189,14 +189,28 @@ export function HomePage() {
 
   const assets = Array.isArray(rawAssets) ? rawAssets : [];
 
-  const featuredAssets = assets.filter((asset) => {
+  // Group assets by piece name so duplicate physical units do not repeat on homepage
+  const uniqueAssets = useMemo<Asset[]>(() => {
+    const map = new Map<string, Asset>();
+    for (const a of assets) {
+      const key = `${a.name.toLowerCase().trim()}__${a.category_id}`;
+      if (!map.has(key)) {
+        map.set(key, a);
+      } else if (a.status === 'available' && !a.is_in_dry_cleaning) {
+        map.set(key, a);
+      }
+    }
+    return Array.from(map.values());
+  }, [assets]);
+
+  const featuredAssets = uniqueAssets.filter((asset: any) => {
     if (activeCategoryFilter === "All") return true;
     if (activeCategoryFilter === "Rent Vault") return (asset.listing_type || "both") !== "buy";
     if (activeCategoryFilter === "Buy to Own") return (asset.listing_type || "both") !== "rent";
     return asset.name.toLowerCase().includes(activeCategoryFilter.toLowerCase());
   });
 
-  const under40kAssets = assets.filter((asset) => {
+  const under40kAssets = uniqueAssets.filter((asset: any) => {
     const buy = asset.buy_price || 35000;
     return buy <= 40000;
   });
@@ -462,7 +476,7 @@ export function HomePage() {
 
           {/* 4-Column Product Grid Matching Rozina Product Cards */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 28 }}>
-            {featuredAssets.slice(0, 8).map((asset) => {
+            {featuredAssets.slice(0, 8).map((asset: Asset) => {
               const buyPrice = asset.buy_price ? asset.buy_price.toLocaleString("en-IN") : "32,000";
               const rentPrice = asset.rental_price ? asset.rental_price.toLocaleString("en-IN") : "2,499";
               const lType = asset.listing_type || "both";

@@ -22,7 +22,12 @@ import {
   Star,
   Image as ImageIcon,
   Check,
+  ChevronDown,
+  ChevronUp,
+  Layers,
+  ShieldCheck,
 } from "lucide-react";
+import React, { useMemo } from "react";
 import { api, request } from "../../api";
 import { useAuth } from "../../auth-context";
 import type { Asset, Category, AssetCreatePayload, ColorVariant } from "../../types";
@@ -42,6 +47,16 @@ export function AdminAssetsPage() {
   const [uploadingShadeIdx, setUploadingShadeIdx] = useState<number | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [retiringAsset, setRetiringAsset] = useState<Asset | null>(null);
+
+  // Grouped Product Management & Units Drawer State
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const toggleGroupExpand = (key: string) => {
+    setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const [addingStockGroup, setAddingStockGroup] = useState<any | null>(null);
+  const [addStockQty, setAddStockQty] = useState<number>(1);
+  const [retiringGroup, setRetiringGroup] = useState<any | null>(null);
 
   // Form state & Validation
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
@@ -385,6 +400,7 @@ export function AdminAssetsPage() {
           rental_price: finalRentalPrice,
           sizes: formSizes.join(","),
           color_variants: JSON.stringify(formVariants),
+          update_all_units: true,
         });
       } else {
         return request<Asset[]>("/assets/", {
@@ -424,6 +440,58 @@ export function AdminAssetsPage() {
     },
   });
 
+  const addStockMutation = useMutation({
+    mutationFn: async () => {
+      if (!addingStockGroup || addStockQty < 1) return;
+      return api.addAssetStock(token!, addingStockGroup.primaryAsset.id, addStockQty);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-assets"] });
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      setAddingStockGroup(null);
+      setAddStockQty(1);
+    },
+    onError: (err: any) => {
+      alert(err?.message || "Failed to add stock units");
+    },
+  });
+
+  const deleteAssetGroupMutation = useMutation({
+    mutationFn: async (grp: any) => {
+      return api.deleteAssetGroup(token!, grp.primaryAsset.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-assets"] });
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      setRetiringGroup(null);
+    },
+    onError: (err: any) => {
+      alert(err?.message || "Failed to retire product group");
+    },
+  });
+
+  const toggleDryCleaningMutation = useMutation({
+    mutationFn: async (unit: Asset) => {
+      return api.updateAsset(token!, unit.id, {
+        is_in_dry_cleaning: !unit.is_in_dry_cleaning,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-assets"] });
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+    },
+  });
+
+  const deleteSingleUnitMutation = useMutation({
+    mutationFn: async (unitId: number) => {
+      return api.deleteAsset(token!, unitId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-assets"] });
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+    },
+  });
+
   // Filter assets by Tab (All, Sale, Rental), Search, Category
   const filteredAssets = assets.filter((asset) => {
     const matchesSearch =
@@ -443,6 +511,44 @@ export function AdminAssetsPage() {
 
     return matchesSearch && matchesCategory && matchesTab;
   });
+
+  // Group filtered assets into unique product models so 9 units do not create 9 duplicate table rows
+  const groupedAssets = useMemo(() => {
+    const map = new Map<string, any>();
+    for (const asset of filteredAssets) {
+      const baseCode = asset.asset_code.replace(/-\d+$/, "");
+      const key = `${asset.name.trim().toLowerCase()}__${asset.category_id}`;
+
+      if (!map.has(key)) {
+        map.set(key, {
+          groupKey: key,
+          baseCode,
+          name: asset.name,
+          category_id: asset.category_id,
+          primaryAsset: asset,
+          units: [],
+          totalStock: 0,
+          availableStock: 0,
+          rentedStock: 0,
+          dryCleaningStock: 0,
+        });
+      }
+      const grp = map.get(key)!;
+      grp.units.push(asset);
+      grp.totalStock += 1;
+      if (asset.is_in_dry_cleaning) {
+        grp.dryCleaningStock += 1;
+      } else if (asset.status === "available" && asset.is_active) {
+        grp.availableStock += 1;
+      } else if (asset.status === "rented" || asset.status === "allocated") {
+        grp.rentedStock += 1;
+      }
+    }
+    for (const grp of map.values()) {
+      grp.units.sort((a: Asset, b: Asset) => a.asset_code.localeCompare(b.asset_code));
+    }
+    return Array.from(map.values());
+  }, [filteredAssets]);
 
   const toggleSize = (sz: string) => {
     clearFieldError("sizes");
@@ -611,168 +717,352 @@ export function AdminAssetsPage() {
             </tr>
           </thead>
           <tbody>
-            {filteredAssets.length === 0 ? (
+            {groupedAssets.length === 0 ? (
               <tr>
                 <td colSpan={6} style={{ padding: "48px 20px", textAlign: "center", color: "var(--color-text-muted)" }}>
                   No products found for this section. Click "+ Add Product" to create one.
                 </td>
               </tr>
             ) : (
-              filteredAssets.map((asset) => {
+              groupedAssets.map((grp: any) => {
+                const asset = grp.primaryAsset;
                 const bPrice = asset.buy_price ? `₹${asset.buy_price.toLocaleString("en-IN")}` : "₹8,999";
                 const rPrice = asset.rental_price ? `₹${asset.rental_price.toLocaleString("en-IN")}/day` : "₹2,499/day";
                 const lType = asset.listing_type || "both";
+                const isExpanded = Boolean(expandedGroups[grp.groupKey]);
 
                 return (
-                  <tr key={asset.id} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.04)" }}>
-                    {/* Thumbnail & Name */}
-                    <td style={{ padding: "14px 20px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                        <img
-                          src={asset.image_url || "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=100&q=80"}
-                          alt={asset.name}
-                          style={{ width: 48, height: 48, borderRadius: 8, objectFit: "cover", border: "1px solid rgba(255,255,255,0.1)" }}
-                        />
-                        <div>
-                          <span style={{ fontSize: "0.92rem", fontWeight: 600, color: "#FFFFFF", display: "block" }}>
-                            {asset.name}
-                          </span>
-                          <span style={{ fontSize: "0.75rem", color: "#C9A34A", fontFamily: "monospace" }}>
-                            {asset.asset_code}
-                          </span>
+                  <React.Fragment key={grp.groupKey}>
+                    <tr style={{ borderBottom: isExpanded ? "none" : "1px solid rgba(255, 255, 255, 0.04)", background: isExpanded ? "rgba(201, 163, 74, 0.04)" : "transparent" }}>
+                      {/* Thumbnail & Product Details */}
+                      <td style={{ padding: "14px 20px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                          <img
+                            src={asset.image_url || "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=100&q=80"}
+                            alt={grp.name}
+                            style={{ width: 48, height: 48, borderRadius: 8, objectFit: "cover", border: "1px solid rgba(255,255,255,0.1)" }}
+                          />
+                          <div>
+                            <span style={{ fontSize: "0.92rem", fontWeight: 600, color: "#FFFFFF", display: "block" }}>
+                              {grp.name}
+                            </span>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                              <span style={{ fontSize: "0.75rem", color: "#C9A34A", fontFamily: "monospace", fontWeight: 700 }}>
+                                {grp.baseCode}
+                              </span>
+                              <span style={{ fontSize: "0.68rem", color: "#A3A3A3", padding: "1px 6px", borderRadius: 4, background: "rgba(255,255,255,0.06)" }}>
+                                {grp.totalStock} {grp.totalStock === 1 ? "unit" : "units"}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Listing Type */}
-                    <td style={{ padding: "14px 20px" }}>
-                      <span
-                        style={{
-                          padding: "4px 10px",
-                          borderRadius: 9999,
-                          fontSize: "0.7rem",
-                          fontWeight: 700,
-                          textTransform: "uppercase",
-                          background: lType === "rent" ? "rgba(201, 163, 74, 0.15)" : lType === "buy" ? "rgba(235, 137, 164, 0.15)" : "rgba(255, 255, 255, 0.1)",
-                          color: lType === "rent" ? "#C9A34A" : lType === "buy" ? "#EB89A4" : "#FFFFFF",
-                          border: lType === "rent" ? "1px solid rgba(201, 163, 74, 0.3)" : lType === "buy" ? "1px solid rgba(235, 137, 164, 0.3)" : "1px solid rgba(255, 255, 255, 0.2)",
-                        }}
-                      >
-                        {lType === "rent" ? "Rental Only" : lType === "buy" ? "Sale Only" : "Rent & Sale"}
-                      </span>
-                    </td>
-
-                    {/* Pricing */}
-                    <td style={{ padding: "14px 20px" }}>
-                      <div style={{ fontSize: "0.85rem", lineHeight: 1.5 }}>
-                        {lType !== "rent" && (
-                          <div style={{ color: "#FFFFFF" }}>
-                            <span style={{ color: "#888", fontSize: "0.72rem" }}>Buy: </span>
-                            <strong>{bPrice}</strong>
-                          </div>
-                        )}
-                        {lType !== "buy" && (
-                          <div style={{ color: "#EB89A4" }}>
-                            <span style={{ color: "#888", fontSize: "0.72rem" }}>Rent: </span>
-                            <strong>{rPrice}</strong>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Sizes & Colors */}
-                    <td style={{ padding: "14px 20px", fontSize: "0.8rem", color: "#A3A3A3" }}>
-                      <div>{asset.sizes || "XS, S, M, L, XL"}</div>
-                    </td>
-
-                    {/* Status (In Stock pill with Sanitization hook) */}
-                    <td style={{ padding: "14px 20px" }}>
-                      {asset.is_in_dry_cleaning ? (
-                        <Link
-                          to="/admin/dry-cleaning"
-                          style={{
-                            padding: "4px 12px",
-                            borderRadius: 9999,
-                            fontSize: "0.72rem",
-                            fontWeight: 700,
-                            background: "rgba(201, 163, 74, 0.18)",
-                            color: "#E2C375",
-                            border: "1px solid rgba(201, 163, 74, 0.4)",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 5,
-                            textDecoration: "none",
-                            boxShadow: "0 0 12px rgba(201, 163, 74, 0.15)",
-                          }}
-                          title="Piece currently undergoing ozone/fabric sanitization. Click to view care tracking."
-                        >
-                          <span style={{ fontSize: "0.8rem" }}>🧼</span> In Sanitization
-                        </Link>
-                      ) : (
+                      {/* Listing Type */}
+                      <td style={{ padding: "14px 20px" }}>
                         <span
                           style={{
-                            padding: "4px 12px",
+                            padding: "4px 10px",
                             borderRadius: 9999,
-                            fontSize: "0.72rem",
+                            fontSize: "0.7rem",
                             fontWeight: 700,
-                            background: asset.status === "available" ? "rgba(34, 197, 94, 0.15)" : "rgba(239, 68, 68, 0.15)",
-                            color: asset.status === "available" ? "#4ade80" : "#f87171",
-                            border: asset.status === "available" ? "1px solid rgba(34, 197, 94, 0.3)" : "1px solid rgba(239, 68, 68, 0.3)",
+                            textTransform: "uppercase",
+                            background: lType === "rent" ? "rgba(201, 163, 74, 0.15)" : lType === "buy" ? "rgba(235, 137, 164, 0.15)" : "rgba(255, 255, 255, 0.1)",
+                            color: lType === "rent" ? "#C9A34A" : lType === "buy" ? "#EB89A4" : "#FFFFFF",
+                            border: lType === "rent" ? "1px solid rgba(201, 163, 74, 0.3)" : lType === "buy" ? "1px solid rgba(235, 137, 164, 0.3)" : "1px solid rgba(255, 255, 255, 0.2)",
                           }}
                         >
-                          {asset.status === "available" ? "In Stock" : asset.status}
+                          {lType === "rent" ? "Rental Only" : lType === "buy" ? "Sale Only" : "Rent & Sale"}
                         </span>
-                      )}
-                    </td>
+                      </td>
 
-                    {/* Actions */}
-                    <td style={{ padding: "14px 20px", textAlign: "right" }}>
-                      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                        <button
-                          onClick={() => openEditModal(asset)}
-                          style={{
-                            padding: "6px 12px",
-                            borderRadius: 6,
-                            background: "rgba(201, 163, 74, 0.15)",
-                            border: "1px solid rgba(201, 163, 74, 0.3)",
-                            color: "#C9A34A",
-                            cursor: "pointer",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 4,
-                            fontSize: "0.75rem",
-                            fontWeight: 600,
-                          }}
-                          title="Edit Product"
-                        >
-                          <Edit size={14} /> Edit
-                        </button>
-                        <button
-                          onClick={() => setRetiringAsset(asset)}
-                          style={{
-                            padding: "6px 10px",
-                            borderRadius: 6,
-                            background: "rgba(239, 68, 68, 0.1)",
-                            border: "1px solid rgba(239, 68, 68, 0.25)",
-                            color: "#f87171",
-                            cursor: "pointer",
-                            transition: "all 0.2s",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.background = "rgba(239, 68, 68, 0.22)";
-                            e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.45)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)";
-                            e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.25)";
-                          }}
-                          title="Retire Product"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                      {/* Pricing */}
+                      <td style={{ padding: "14px 20px" }}>
+                        <div style={{ fontSize: "0.85rem", lineHeight: 1.5 }}>
+                          {lType !== "rent" && (
+                            <div style={{ color: "#FFFFFF" }}>
+                              <span style={{ color: "#888", fontSize: "0.72rem" }}>Buy: </span>
+                              <strong>{bPrice}</strong>
+                            </div>
+                          )}
+                          {lType !== "buy" && (
+                            <div style={{ color: "#EB89A4" }}>
+                              <span style={{ color: "#888", fontSize: "0.72rem" }}>Rent: </span>
+                              <strong>{rPrice}</strong>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Sizes & Colors */}
+                      <td style={{ padding: "14px 20px", fontSize: "0.8rem", color: "#A3A3A3" }}>
+                        <div>{asset.sizes || "XS, S, M, L, XL"}</div>
+                      </td>
+
+                      {/* Inventory Status with breakdown */}
+                      <td style={{ padding: "14px 20px" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                          <div>
+                            {grp.availableStock > 0 ? (
+                              <span
+                                style={{
+                                  padding: "4px 10px",
+                                  borderRadius: 9999,
+                                  fontSize: "0.72rem",
+                                  fontWeight: 700,
+                                  background: "rgba(34, 197, 94, 0.15)",
+                                  color: "#4ade80",
+                                  border: "1px solid rgba(34, 197, 94, 0.3)",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 5,
+                                }}
+                              >
+                                ● In Stock ({grp.availableStock}/{grp.totalStock} available)
+                              </span>
+                            ) : (
+                              <span
+                                style={{
+                                  padding: "4px 10px",
+                                  borderRadius: 9999,
+                                  fontSize: "0.72rem",
+                                  fontWeight: 700,
+                                  background: "rgba(239, 68, 68, 0.15)",
+                                  color: "#f87171",
+                                  border: "1px solid rgba(239, 68, 68, 0.3)",
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 5,
+                                }}
+                              >
+                                ● Out of Stock ({grp.totalStock} units)
+                              </span>
+                            )}
+                          </div>
+                          {(grp.rentedStock > 0 || grp.dryCleaningStock > 0) && (
+                            <span style={{ fontSize: "0.68rem", color: "#888" }}>
+                              {grp.rentedStock > 0 && `${grp.rentedStock} Rented`}
+                              {grp.rentedStock > 0 && grp.dryCleaningStock > 0 && " · "}
+                              {grp.dryCleaningStock > 0 && `${grp.dryCleaningStock} Laundry`}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Actions */}
+                      <td style={{ padding: "14px 20px", textAlign: "right" }}>
+                        <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", alignItems: "center" }}>
+                          <button
+                            onClick={() => toggleGroupExpand(grp.groupKey)}
+                            style={{
+                              padding: "6px 10px",
+                              borderRadius: 6,
+                              background: isExpanded ? "rgba(201, 163, 74, 0.2)" : "rgba(255, 255, 255, 0.06)",
+                              border: isExpanded ? "1px solid #C9A34A" : "1px solid rgba(255, 255, 255, 0.12)",
+                              color: isExpanded ? "#C9A34A" : "#CCCCCC",
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                              fontSize: "0.74rem",
+                              fontWeight: 600,
+                              transition: "all 0.15s ease",
+                            }}
+                            title="Inspect individual physical garments"
+                          >
+                            <Layers size={13} />
+                            {isExpanded ? "Hide Units" : `View ${grp.units.length} Units`}
+                            {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setAddingStockGroup(grp);
+                              setAddStockQty(1);
+                            }}
+                            style={{
+                              padding: "6px 10px",
+                              borderRadius: 6,
+                              background: "rgba(201, 163, 74, 0.12)",
+                              border: "1px solid rgba(201, 163, 74, 0.35)",
+                              color: "#C9A34A",
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                              fontSize: "0.74rem",
+                              fontWeight: 600,
+                            }}
+                            title="Add more stock units to this product style"
+                          >
+                            <Plus size={13} /> Add Stock
+                          </button>
+
+                          <button
+                            onClick={() => openEditModal(asset)}
+                            style={{
+                              padding: "6px 10px",
+                              borderRadius: 6,
+                              background: "rgba(255, 255, 255, 0.06)",
+                              border: "1px solid rgba(255, 255, 255, 0.15)",
+                              color: "#FFFFFF",
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                              fontSize: "0.74rem",
+                              fontWeight: 600,
+                            }}
+                            title="Edit Product Style Details"
+                          >
+                            <Edit size={13} /> Edit
+                          </button>
+
+                          <button
+                            onClick={() => setRetiringGroup(grp)}
+                            style={{
+                              padding: "6px 8px",
+                              borderRadius: 6,
+                              background: "rgba(239, 68, 68, 0.1)",
+                              border: "1px solid rgba(239, 68, 68, 0.25)",
+                              color: "#f87171",
+                              cursor: "pointer",
+                            }}
+                            title="Retire All Units of this Garment"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Expandable Physical Units Drawer */}
+                    {isExpanded && (
+                      <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
+                        <td colSpan={6} style={{ background: "#0E0E0E", padding: "16px 22px 20px 22px" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <span style={{ fontSize: "0.72rem", color: "#C9A34A", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                                Physical Unit Inventory Tracking ({grp.units.length} Units)
+                              </span>
+                              <span style={{ fontSize: "0.7rem", color: "#888" }}>
+                                Individual serial barcodes for white-glove lifecycle and sanitization.
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setAddingStockGroup(grp);
+                                setAddStockQty(1);
+                              }}
+                              style={{
+                                background: "transparent",
+                                border: "none",
+                                color: "#C9A34A",
+                                fontSize: "0.72rem",
+                                cursor: "pointer",
+                                fontWeight: 600,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 4,
+                              }}
+                            >
+                              <Plus size={13} /> + Add Another Unit
+                            </button>
+                          </div>
+
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 10 }}>
+                            {grp.units.map((unit: Asset) => {
+                              const isDryCleaning = unit.is_in_dry_cleaning;
+                              const isAvail = unit.status === "available" && !isDryCleaning && unit.is_active;
+                              const isRented = unit.status === "rented" || unit.status === "allocated";
+
+                              return (
+                                <div
+                                  key={unit.id}
+                                  style={{
+                                    background: "#161616",
+                                    borderRadius: 10,
+                                    border: "1px solid rgba(255, 255, 255, 0.08)",
+                                    padding: "10px 14px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "space-between",
+                                  }}
+                                >
+                                  <div>
+                                    <span style={{ fontFamily: "monospace", fontSize: "0.82rem", fontWeight: 700, color: "#C9A34A", display: "block" }}>
+                                      {unit.asset_code}
+                                    </span>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+                                      {isDryCleaning ? (
+                                        <span style={{ fontSize: "0.66rem", color: "#E2C375", fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "rgba(201, 163, 74, 0.18)" }}>
+                                          🧼 In Laundry
+                                        </span>
+                                      ) : isAvail ? (
+                                        <span style={{ fontSize: "0.66rem", color: "#4ade80", fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "rgba(34, 197, 94, 0.15)" }}>
+                                          ● Available
+                                        </span>
+                                      ) : isRented ? (
+                                        <span style={{ fontSize: "0.66rem", color: "#facc15", fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "rgba(250, 204, 21, 0.15)" }}>
+                                          ● Rented / Allocated
+                                        </span>
+                                      ) : (
+                                        <span style={{ fontSize: "0.66rem", color: "#9ca3af", fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "rgba(156, 163, 175, 0.15)" }}>
+                                          ● {unit.status}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                    <button
+                                      onClick={() => toggleDryCleaningMutation.mutate(unit)}
+                                      disabled={toggleDryCleaningMutation.isPending}
+                                      style={{
+                                        padding: "4px 8px",
+                                        borderRadius: 6,
+                                        background: isDryCleaning ? "rgba(34, 197, 94, 0.15)" : "rgba(201, 163, 74, 0.12)",
+                                        border: isDryCleaning ? "1px solid rgba(34, 197, 94, 0.3)" : "1px solid rgba(201, 163, 74, 0.3)",
+                                        color: isDryCleaning ? "#4ade80" : "#C9A34A",
+                                        cursor: "pointer",
+                                        fontSize: "0.68rem",
+                                        fontWeight: 600,
+                                      }}
+                                      title={isDryCleaning ? "Return unit to available inventory" : "Send unit to dry cleaning"}
+                                    >
+                                      {isDryCleaning ? "Mark Clean" : "🧼 Laundry"}
+                                    </button>
+
+                                    {grp.units.length > 1 && (
+                                      <button
+                                        onClick={() => {
+                                          if (window.confirm(`Retire unit ${unit.asset_code}?`)) {
+                                            deleteSingleUnitMutation.mutate(unit.id);
+                                          }
+                                        }}
+                                        disabled={deleteSingleUnitMutation.isPending}
+                                        style={{
+                                          padding: "4px 6px",
+                                          borderRadius: 6,
+                                          background: "transparent",
+                                          border: "none",
+                                          color: "#666",
+                                          cursor: "pointer",
+                                        }}
+                                        title="Retire single physical unit"
+                                      >
+                                        <Trash2 size={13} />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 );
               })
             )}
@@ -2163,6 +2453,201 @@ export function AdminAssetsPage() {
         )}
       </AnimatePresence>
 
+
+      {/* ── ADD STOCK MODAL ── */}
+      {addingStockGroup && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.85)",
+            backdropFilter: "blur(10px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 110,
+            padding: 20,
+          }}
+          onClick={() => setAddingStockGroup(null)}
+        >
+          <div
+            style={{
+              background: "#161616",
+              border: "1.5px solid rgba(201, 163, 74, 0.35)",
+              borderRadius: 16,
+              maxWidth: 440,
+              width: "100%",
+              padding: 26,
+              boxShadow: "0 20px 50px rgba(0,0,0,0.8)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div>
+                <span style={{ fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.15em", color: "#C9A34A", fontWeight: 700 }}>
+                  INVENTORY EXPANSION
+                </span>
+                <h3 style={{ fontFamily: "var(--font-brand)", fontSize: "1.25rem", color: "#FFFFFF", margin: "4px 0 0" }}>
+                  Add Stock Units
+                </h3>
+              </div>
+              <button onClick={() => setAddingStockGroup(null)} style={{ background: "none", border: "none", color: "#888", cursor: "pointer" }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ padding: "10px 14px", borderRadius: 8, background: "#1C1C1C", border: "1px solid rgba(255,255,255,0.06)", marginBottom: 16 }}>
+              <span style={{ fontSize: "0.75rem", color: "#A3A3A3", display: "block" }}>Product Style:</span>
+              <strong style={{ fontSize: "0.9rem", color: "#FFFFFF" }}>{addingStockGroup.name}</strong>
+              <span style={{ fontSize: "0.75rem", color: "#C9A34A", fontFamily: "monospace", display: "block", marginTop: 2 }}>
+                Base SKU: {addingStockGroup.baseCode} ({addingStockGroup.totalStock} units currently tracked)
+              </span>
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "#FFFFFF", display: "block", marginBottom: 6 }}>
+                Number of Units to Add
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={100}
+                value={addStockQty}
+                onChange={(e) => setAddStockQty(Math.max(1, parseInt(e.target.value) || 1))}
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  padding: "10px 14px",
+                  borderRadius: 8,
+                  background: "#1E1E1E",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  color: "#FFFFFF",
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                  outline: "none",
+                }}
+              />
+              <span style={{ fontSize: "0.7rem", color: "#888", display: "block", marginTop: 6 }}>
+                Will automatically assign serial codes starting from #{addingStockGroup.totalStock + 1}.
+              </span>
+            </div>
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => setAddingStockGroup(null)}
+                style={{
+                  flex: 1,
+                  padding: "10px",
+                  borderRadius: 8,
+                  background: "transparent",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  color: "#AAA",
+                  fontSize: "0.82rem",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => addStockMutation.mutate()}
+                disabled={addStockMutation.isPending}
+                className="btn-rose-primary"
+                style={{ flex: 1, padding: "10px", fontSize: "0.82rem" }}
+              >
+                {addStockMutation.isPending ? "Adding Units..." : `Add +${addStockQty} Units`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── RETIRE PRODUCT GROUP MODAL ── */}
+      {retiringGroup && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.85)",
+            backdropFilter: "blur(10px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 110,
+            padding: 20,
+          }}
+          onClick={() => setRetiringGroup(null)}
+        >
+          <div
+            style={{
+              background: "#161616",
+              border: "1.5px solid rgba(239, 68, 68, 0.35)",
+              borderRadius: 16,
+              maxWidth: 440,
+              width: "100%",
+              padding: 26,
+              boxShadow: "0 20px 50px rgba(0,0,0,0.8)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div>
+                <span style={{ fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.15em", color: "#EF4444", fontWeight: 700 }}>
+                  CONFIRM RETIREMENT
+                </span>
+                <h3 style={{ fontFamily: "var(--font-brand)", fontSize: "1.25rem", color: "#FFFFFF", margin: "4px 0 0" }}>
+                  Retire Garment Product
+                </h3>
+              </div>
+              <button onClick={() => setRetiringGroup(null)} style={{ background: "none", border: "none", color: "#888", cursor: "pointer" }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: "0.85rem", color: "var(--color-text-muted)", lineHeight: 1.5, marginBottom: 16 }}>
+              This action will retire and permanently remove all <strong style={{ color: "#FFF" }}>{retiringGroup.totalStock} units</strong> of <strong style={{ color: "#C9A34A" }}>{retiringGroup.name}</strong> ({retiringGroup.baseCode}) from the online store and admin product manifest.
+            </p>
+
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => setRetiringGroup(null)}
+                style={{
+                  flex: 1,
+                  padding: "10px",
+                  borderRadius: 8,
+                  background: "transparent",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  color: "#AAA",
+                  fontSize: "0.82rem",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => deleteAssetGroupMutation.mutate(retiringGroup)}
+                disabled={deleteAssetGroupMutation.isPending}
+                style={{
+                  flex: 1,
+                  padding: "10px",
+                  borderRadius: 8,
+                  background: "#EF4444",
+                  border: "none",
+                  color: "#FFFFFF",
+                  fontSize: "0.82rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                {deleteAssetGroupMutation.isPending ? "Retiring..." : `Retire All ${retiringGroup.totalStock} Units`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

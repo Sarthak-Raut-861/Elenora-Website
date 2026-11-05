@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import {
@@ -64,6 +64,27 @@ export function AssetDetailPage() {
     queryFn: () => api.getAsset(token, assetId),
     enabled: Boolean(assetId),
   });
+
+  // Query sister units to calculate real-time piece stock
+  const { data: rawAllAssets = [] } = useQuery<Asset[]>({
+    queryKey: ["all-assets-inventory"],
+    queryFn: () => api.listAssets(token),
+  });
+
+  const sisterUnits = useMemo(() => {
+    if (!asset || !Array.isArray(rawAllAssets)) return [];
+    return rawAllAssets.filter(
+      (a) => a.name.toLowerCase().trim() === asset.name.toLowerCase().trim() && a.category_id === asset.category_id
+    );
+  }, [asset, rawAllAssets]);
+
+  const availableUnits = useMemo(() => {
+    return sisterUnits.filter((u) => u.status === "available" && !u.is_in_dry_cleaning && u.is_active);
+  }, [sisterUnits]);
+
+  const availableStock = sisterUnits.length > 0 ? availableUnits.length : (asset?.status === "available" && !asset.is_in_dry_cleaning ? 1 : 0);
+  const totalStock = sisterUnits.length > 0 ? sisterUnits.length : 1;
+  const isOutOfStock = availableStock === 0;
 
   // Gallery images parsing (multi-angle photography)
   const galleryImages: string[] = (() => {
@@ -542,21 +563,72 @@ export function AssetDetailPage() {
               )}
             </AnimatePresence>
 
+            {/* Stock Availability Indicator */}
+            {isOutOfStock ? (
+              <div
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: "10px",
+                  background: "rgba(239, 68, 68, 0.12)",
+                  border: "1px solid rgba(239, 68, 68, 0.3)",
+                  color: "#f87171",
+                  fontSize: "0.82rem",
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginBottom: "8px",
+                }}
+              >
+                <AlertCircle size={18} />
+                <span>Currently Out of Stock — All {totalStock} atelier units of this piece are reserved or in sanitization.</span>
+              </div>
+            ) : (
+              <div
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: "8px",
+                  background: "rgba(34, 197, 94, 0.1)",
+                  border: "1px solid rgba(34, 197, 94, 0.25)",
+                  color: "#4ade80",
+                  fontSize: "0.8rem",
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  marginBottom: "8px",
+                }}
+              >
+                <span>● In Stock: {availableStock} of {totalStock} units available for instant booking</span>
+              </div>
+            )}
+
             {/* Dual CTAs: Rent Now & Buy Now */}
             <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
               {isRentable && (
                 <button
-                  onClick={() => setShowBookingModal(true)}
+                  onClick={() => {
+                    if (!isOutOfStock) setShowBookingModal(true);
+                  }}
+                  disabled={isOutOfStock}
                   className="btn-rose-primary"
-                  style={{ flex: 1, padding: "14px 20px", fontSize: "0.9rem", fontWeight: 700 }}
+                  style={{
+                    flex: 1,
+                    padding: "14px 20px",
+                    fontSize: "0.9rem",
+                    fontWeight: 700,
+                    opacity: isOutOfStock ? 0.45 : 1,
+                    cursor: isOutOfStock ? "not-allowed" : "pointer",
+                  }}
                 >
-                  <Calendar size={18} /> Rent for Occasion
+                  <Calendar size={18} /> {isOutOfStock ? "Out of Stock" : "Rent for Occasion"}
                 </button>
               )}
 
               {isBuyable && (
                 <button
                   onClick={() => {
+                    if (isOutOfStock) return;
                     if (!token) {
                       navigate("/login", { state: { from: `/assets/${asset.id}` } });
                       return;
@@ -564,10 +636,18 @@ export function AssetDetailPage() {
                     setBuyError("");
                     setShowBuyModal(true);
                   }}
+                  disabled={isOutOfStock}
                   className={isRentable ? "btn-gold-outline" : "btn-rose-primary"}
-                  style={{ flex: 1, padding: "14px 20px", fontSize: "0.9rem", fontWeight: 700 }}
+                  style={{
+                    flex: 1,
+                    padding: "14px 20px",
+                    fontSize: "0.9rem",
+                    fontWeight: 700,
+                    opacity: isOutOfStock ? 0.45 : 1,
+                    cursor: isOutOfStock ? "not-allowed" : "pointer",
+                  }}
                 >
-                  <ShoppingBag size={18} /> Buy to Own
+                  <ShoppingBag size={18} /> {isOutOfStock ? "Out of Stock" : "Buy to Own"}
                 </button>
               )}
             </div>

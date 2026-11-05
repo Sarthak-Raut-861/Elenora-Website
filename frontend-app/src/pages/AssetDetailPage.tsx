@@ -98,24 +98,18 @@ export function AssetDetailPage() {
     return [];
   })();
 
-  // Color variants parsing
-  const variants: ColorVariant[] = (() => {
+  // Color variants parsing - ONLY real variants configured by the boutique admin
+  const variants: ColorVariant[] = useMemo(() => {
     if (asset?.color_variants) {
       try {
         const parsed = JSON.parse(asset.color_variants);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch {
-        // fallback
-      }
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.filter((v: ColorVariant) => v && v.color && v.color.trim() && (v.image_url || v.hex));
+        }
+      } catch {}
     }
-    const baseImg = galleryImages[0] || asset?.image_url || "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80";
-    return [
-      { color: "Blush Rose", hex: "#C9A34A", image_url: baseImg },
-      { color: "Champagne Gold", hex: "#C9A34A", image_url: "https://images.unsplash.com/photo-1594552072238-b8a33785b261?auto=format&fit=crop&w=800&q=80" },
-      { color: "Midnight Noir", hex: "#1A1A1A", image_url: "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=800&q=80" },
-      { color: "Emerald Green", hex: "#046307", image_url: "https://images.unsplash.com/photo-1566737236500-c8ac43014a67?auto=format&fit=crop&w=800&q=80" },
-    ];
-  })();
+    return [];
+  }, [asset?.color_variants]);
 
   // Available sizes
   const sizes: string[] = (() => {
@@ -125,22 +119,26 @@ export function AssetDetailPage() {
     return ["XS", "S", "M", "L", "XL"];
   })();
 
-  const [selectedColor, setSelectedColor] = useState<string>("Blush Rose");
-  const [selectedSize, setSelectedSize] = useState<string>("M");
+  const [selectedColor, setSelectedColor] = useState<string>("");
+  const [selectedSize, setSelectedSize] = useState<string>("");
   const [activeImage, setActiveImage] = useState<string>("");
 
   useEffect(() => {
-    const initialImg = galleryImages[0] || variants[0]?.image_url || asset?.image_url || "";
+    const initialImg = asset?.image_url || galleryImages[0] || "";
     if (initialImg && !activeImage) {
       setActiveImage(initialImg);
     }
-    if (variants.length > 0 && !selectedColor) {
-      setSelectedColor(variants[0].color);
+    if (variants.length > 0) {
+      if (!selectedColor || !variants.some(v => v.color === selectedColor)) {
+        setSelectedColor(variants[0].color);
+      }
+    } else {
+      setSelectedColor("");
     }
     if (sizes.length > 0 && !selectedSize) {
       setSelectedSize(sizes[0]);
     }
-  }, [asset, galleryImages.length]);
+  }, [asset, galleryImages, variants, sizes]);
 
   const handleColorSelect = (v: ColorVariant) => {
     setSelectedColor(v.color);
@@ -287,7 +285,7 @@ export function AssetDetailPage() {
                 </button>
               </div>
 
-              {/* Dynamic Color Banner at bottom of image */}
+              {/* Dynamic Status Banner at bottom of image */}
               <div
                 style={{
                   position: "absolute",
@@ -302,10 +300,10 @@ export function AssetDetailPage() {
                 }}
               >
                 <span style={{ fontSize: "0.78rem", color: "#C9A34A", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase" }}>
-                  Selected Shade: {selectedColor}
+                  {variants.length > 1 && selectedColor ? `Selected Shade: ${selectedColor}` : "Atelier Couture Original"}
                 </span>
                 <span style={{ fontSize: "0.75rem", color: "#A3A3A3" }}>
-                  Size {selectedSize} In Stock
+                  {selectedSize ? `Size ${selectedSize}` : "Tailored Sizing"} · {availableStock > 0 ? "In Stock" : "Reserved"}
                 </span>
               </div>
             </div>
@@ -346,66 +344,69 @@ export function AssetDetailPage() {
               </div>
             )}
 
-            {/* ── COLOR SHADE SWATCHES & DYNAMIC PREVIEW ── */}
-            <div>
-              <p style={{ fontSize: "0.72rem", color: "#C9A34A", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
-                Available Atelier Shades ({variants.length}):
-              </p>
-              <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(variants.length, 5)}, 1fr)`, gap: 10 }}>
-                {variants.map((v) => {
-                  const isSelected = selectedColor === v.color;
-                  return (
-                    <div
-                      key={v.color}
-                      onClick={() => handleColorSelect(v)}
-                      style={{
-                        position: "relative",
-                        borderRadius: 12,
-                        overflow: "hidden",
-                        border: isSelected ? "2px solid #C9A34A" : "1px solid rgba(255, 255, 255, 0.12)",
-                        cursor: "pointer",
-                        background: "#181818",
-                        boxShadow: isSelected ? "0 0 16px rgba(201, 163, 74, 0.4)" : "none",
-                        transition: "all 0.2s ease",
-                      }}
-                    >
-                      {v.image_url ? (
-                        <img
-                          src={v.image_url}
-                          alt={v.color}
-                          style={{ width: "100%", height: 72, objectFit: "cover", display: "block" }}
-                        />
-                      ) : (
-                        <div style={{ width: "100%", height: 72, background: v.hex, opacity: 0.8 }} />
-                      )}
+            {/* ── COLOR SHADE SWATCHES & DYNAMIC PREVIEW (ONLY IF PRODUCT HAS MULTIPLE SHADES) ── */}
+            {variants.length > 1 && (
+              <div>
+                <p style={{ fontSize: "0.72rem", color: "#C9A34A", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
+                  Available Atelier Shades ({variants.length}):
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(variants.length, 5)}, 1fr)`, gap: 10 }}>
+                  {variants.map((v) => {
+                    const isSelected = selectedColor === v.color;
+                    const shadeImg = v.image_url || asset?.image_url || "";
+                    return (
                       <div
+                        key={v.color}
+                        onClick={() => handleColorSelect(v)}
                         style={{
-                          padding: "6px 4px",
-                          background: "#141414",
-                          textAlign: "center",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          gap: 6,
+                          position: "relative",
+                          borderRadius: 12,
+                          overflow: "hidden",
+                          border: isSelected ? "2px solid #C9A34A" : "1px solid rgba(255, 255, 255, 0.12)",
+                          cursor: "pointer",
+                          background: "#181818",
+                          boxShadow: isSelected ? "0 0 16px rgba(201, 163, 74, 0.4)" : "none",
+                          transition: "all 0.2s ease",
                         }}
                       >
-                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: v.hex, border: "1px solid rgba(255,255,255,0.4)" }} />
-                        <span style={{ fontSize: "0.68rem", fontWeight: 600, color: isSelected ? "#C9A34A" : "#A3A3A3", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                          {v.color}
-                        </span>
+                        {shadeImg ? (
+                          <img
+                            src={shadeImg}
+                            alt={v.color}
+                            style={{ width: "100%", height: 72, objectFit: "cover", display: "block" }}
+                          />
+                        ) : (
+                          <div style={{ width: "100%", height: 72, background: v.hex, opacity: 0.8 }} />
+                        )}
+                        <div
+                          style={{
+                            padding: "6px 4px",
+                            background: "#141414",
+                            textAlign: "center",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 6,
+                          }}
+                        >
+                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: v.hex, border: "1px solid rgba(255,255,255,0.4)" }} />
+                          <span style={{ fontSize: "0.68rem", fontWeight: 600, color: isSelected ? "#C9A34A" : "#A3A3A3", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {v.color}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* ── RIGHT: Specifications & Interactive Actions ── */}
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <div>
               <span style={{ fontSize: "0.72rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "#C9A34A", fontWeight: 700 }}>
-                AUTHENTIC COUTURE VAULT • {asset.asset_code}
+                AUTHENTIC COUTURE VAULT • {asset.asset_code.replace(/-\d+$/, "")}
               </span>
               <h1
                 style={{
@@ -421,7 +422,7 @@ export function AssetDetailPage() {
               </h1>
 
               <p style={{ color: "var(--color-text-muted)", fontSize: "0.92rem", lineHeight: 1.6 }}>
-                {asset.description || "Exclusive couture piece crafted from hand-loomed textiles with gold zardozi embellishments. Complete with certified eco-sterilization."}
+                {asset.description && asset.description.trim() ? asset.description : "Exclusive couture piece tailored for celebrations."}
               </p>
             </div>
 
@@ -464,40 +465,42 @@ export function AssetDetailPage() {
               )}
             </div>
 
-            {/* Interactive Color selector chips (changes image!) */}
-            <div>
-              <label style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#C9A34A", display: "block", marginBottom: 10 }}>
-                Select Color: <span style={{ color: "#C9A34A", fontWeight: 700 }}>{selectedColor}</span>
-              </label>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                {variants.map((v) => {
-                  const isSelected = selectedColor === v.color;
-                  return (
-                    <button
-                      key={v.color}
-                      onClick={() => handleColorSelect(v)}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: 8,
-                        padding: "8px 16px",
-                        borderRadius: 9999,
-                        fontSize: "0.78rem",
-                        fontWeight: 600,
-                        background: isSelected ? "rgba(201,163,74,0.18)" : "#181818",
-                        border: isSelected ? "1.5px solid #C9A34A" : "1px solid rgba(255,255,255,0.1)",
-                        color: isSelected ? "#C9A34A" : "#A3A3A3",
-                        cursor: "pointer",
-                        transition: "all 0.2s ease",
-                      }}
-                    >
-                      <span style={{ width: 10, height: 10, borderRadius: "50%", background: v.hex, border: "1px solid rgba(255,255,255,0.3)" }} />
-                      <span>{v.color}</span>
-                    </button>
-                  );
-                })}
+            {/* Interactive Color selector chips (only if product has multiple shades) */}
+            {variants.length > 1 && (
+              <div>
+                <label style={{ fontSize: "0.75rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#C9A34A", display: "block", marginBottom: 10 }}>
+                  Select Color: <span style={{ color: "#C9A34A", fontWeight: 700 }}>{selectedColor}</span>
+                </label>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  {variants.map((v) => {
+                    const isSelected = selectedColor === v.color;
+                    return (
+                      <button
+                        key={v.color}
+                        onClick={() => handleColorSelect(v)}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 8,
+                          padding: "8px 16px",
+                          borderRadius: 9999,
+                          fontSize: "0.78rem",
+                          fontWeight: 600,
+                          background: isSelected ? "rgba(201,163,74,0.18)" : "#181818",
+                          border: isSelected ? "1.5px solid #C9A34A" : "1px solid rgba(255,255,255,0.1)",
+                          color: isSelected ? "#C9A34A" : "#A3A3A3",
+                          cursor: "pointer",
+                          transition: "all 0.2s ease",
+                        }}
+                      >
+                        <span style={{ width: 10, height: 10, borderRadius: "50%", background: v.hex, border: "1px solid rgba(255,255,255,0.3)" }} />
+                        <span>{v.color}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Size Selector (XS, S, M, L, XL) */}
             <div>

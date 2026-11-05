@@ -70,10 +70,7 @@ export function AdminAssetsPage() {
   const [formBuyPrice, setFormBuyPrice] = useState<number>(8999);
   const [formRentalPrice, setFormRentalPrice] = useState<number>(2499);
   const [formSizes, setFormSizes] = useState<string[]>(["XS", "S", "M", "L", "XL"]);
-  const [formVariants, setFormVariants] = useState<ColorVariant[]>([
-    { color: "Blush Rose", hex: "#EB89A4", image_url: "" },
-    { color: "Champagne Gold", hex: "#C9A34A", image_url: "" },
-  ]);
+  const [formVariants, setFormVariants] = useState<ColorVariant[]>([]);
 
   const { data: rawAssets = [], isLoading } = useQuery<Asset[]>({
     queryKey: ["admin-assets", token],
@@ -177,10 +174,7 @@ export function AdminAssetsPage() {
     setFormSizes(["XS", "S", "M", "L", "XL"]);
     setFormGalleryImages([]);
     setGalleryUrlInput("");
-    setFormVariants([
-      { color: "Blush Rose", hex: "#EB89A4", image_url: "" },
-      { color: "Champagne Gold", hex: "#C9A34A", image_url: "" },
-    ]);
+    setFormVariants([]);
     setShowModal(true);
   };
 
@@ -229,18 +223,15 @@ export function AdminAssetsPage() {
       try {
         const parsed = JSON.parse(asset.color_variants);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setFormVariants(parsed);
+          setFormVariants(parsed.filter((v: ColorVariant) => v && v.color && v.color.trim()));
         } else {
-          setFormVariants([{ color: "Standard", hex: "#C9A34A", image_url: asset.image_url || "" }]);
+          setFormVariants([]);
         }
       } catch {
-        setFormVariants([{ color: "Standard", hex: "#C9A34A", image_url: asset.image_url || "" }]);
+        setFormVariants([]);
       }
     } else {
-      setFormVariants([
-        { color: "Signature", hex: "#C9A34A", image_url: asset.image_url || "" },
-        { color: "Blush Rose", hex: "#EB89A4", image_url: "" },
-      ]);
+      setFormVariants([]);
     }
     setShowModal(true);
   };

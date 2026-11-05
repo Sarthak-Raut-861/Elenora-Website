@@ -21,6 +21,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../api";
 import { useAuth } from "../auth-context";
+import { useWishlist } from "../wishlist-context";
 import { AssetBookingModal } from "../components/AssetBookingModal";
 import { BoutiqueAddressShowcase } from "../components/BoutiqueAddressShowcase";
 import type { Asset } from "../types";
@@ -165,6 +166,7 @@ const EDITORIAL_COLLECTIONS = [
 export function HomePage() {
   const navigate = useNavigate();
   const { token } = useAuth();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const [selectedAssetForBooking, setSelectedAssetForBooking] = useState<Asset | null>(null);
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<string>("All");
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -543,22 +545,25 @@ export function HomePage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          toggleWishlist(asset);
                         }}
                         style={{
-                          width: 32,
-                          height: 32,
+                          width: 34,
+                          height: 34,
                           borderRadius: "50%",
-                          background: "rgba(11, 11, 11, 0.7)",
-                          border: "1px solid rgba(255, 255, 255, 0.2)",
-                          color: "#C9A34A",
+                          background: "rgba(11, 11, 11, 0.75)",
+                          border: isInWishlist(asset.id) ? "1.5px solid #C9A34A" : "1px solid rgba(255, 255, 255, 0.2)",
+                          color: isInWishlist(asset.id) ? "#C9A34A" : "#FFFFFF",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
                           cursor: "pointer",
+                          boxShadow: isInWishlist(asset.id) ? "0 0 12px rgba(201, 163, 74, 0.4)" : "none",
+                          transition: "all 0.2s ease",
                         }}
-                        title="Wishlist"
+                        title={isInWishlist(asset.id) ? "Remove from Wishlist" : "Save to Wishlist"}
                       >
-                        <Heart size={16} />
+                        <Heart size={16} fill={isInWishlist(asset.id) ? "#C9A34A" : "none"} />
                       </button>
                     </div>
                   </div>

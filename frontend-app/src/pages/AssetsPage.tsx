@@ -19,6 +19,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../api";
 import { useAuth } from "../auth-context";
+import { useWishlist } from "../wishlist-context";
 import { AssetBookingModal } from "../components/AssetBookingModal";
 import type { Asset, Category } from "../types";
 
@@ -30,6 +31,7 @@ export function AssetsPage() {
   const urlCategory = searchParams.get("category") || "all";
 
   const { token } = useAuth();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState<string>(urlType);
   const [selectedCategory, setSelectedCategory] = useState<string>(urlCategory);
@@ -423,20 +425,28 @@ export function AssetsPage() {
                   {/* Wishlist Heart */}
                   <div style={{ position: "absolute", top: 14, right: 14, zIndex: 5 }}>
                     <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleWishlist(asset);
+                      }}
                       style={{
-                        width: 32,
-                        height: 32,
+                        width: 34,
+                        height: 34,
                         borderRadius: "50%",
-                        background: "rgba(11,11,11,0.7)",
-                        border: "1px solid rgba(255,255,255,0.2)",
-                        color: "#C9A34A",
+                        background: "rgba(11,11,11,0.75)",
+                        border: isInWishlist(asset.id) ? "1.5px solid #C9A34A" : "1px solid rgba(255,255,255,0.2)",
+                        color: isInWishlist(asset.id) ? "#C9A34A" : "#FFFFFF",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         cursor: "pointer",
+                        boxShadow: isInWishlist(asset.id) ? "0 0 12px rgba(201,163,74,0.4)" : "none",
+                        transition: "all 0.2s ease",
                       }}
+                      title={isInWishlist(asset.id) ? "Remove from Wishlist" : "Save to Wishlist"}
                     >
-                      <Heart size={16} />
+                      <Heart size={16} fill={isInWishlist(asset.id) ? "#C9A34A" : "none"} />
                     </button>
                   </div>
                 </div>
@@ -531,7 +541,7 @@ export function AssetsPage() {
 
                       {isBuyable && !isRentable && (
                         <button
-                          onClick={() => navigate(`/assets/${asset.id}`)}
+                          onClick={() => navigate(`/checkout?type=buy&assetId=${asset.id}`)}
                           className="btn-rose-primary"
                           style={{ flex: 1, padding: "10px 14px", fontSize: "0.82rem" }}
                         >

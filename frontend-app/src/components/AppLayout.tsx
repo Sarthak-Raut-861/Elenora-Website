@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../auth-context";
+import { useWishlist } from "../wishlist-context";
 
 function InstagramIcon({ size = 18, color = "currentColor" }: { size?: number; color?: string }) {
   return (
@@ -18,6 +19,7 @@ function InstagramIcon({ size = 18, color = "currentColor" }: { size?: number; c
 
 export function AppLayout() {
   const { user, token, logout } = useAuth();
+  const { wishlistCount } = useWishlist();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -484,6 +486,50 @@ export function AppLayout() {
                 </AnimatePresence>
               </div>
 
+              {/* Atelier Wishlist */}
+              <button
+                onClick={() => navigate("/wishlist")}
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: location.pathname === "/wishlist" ? "#C9A34A" : "rgba(255, 255, 255, 0.75)",
+                  cursor: "pointer",
+                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                  padding: 2,
+                  transition: "color 0.2s",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#FFFFFF")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = location.pathname === "/wishlist" ? "#C9A34A" : "rgba(255, 255, 255, 0.75)")}
+                title={`Atelier Wishlist (${wishlistCount})`}
+              >
+                <Heart size={19} strokeWidth={1.6} fill={location.pathname === "/wishlist" || wishlistCount > 0 ? "rgba(201, 163, 74, 0.25)" : "none"} />
+                {wishlistCount > 0 && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: -6,
+                      right: -8,
+                      minWidth: 16,
+                      height: 16,
+                      borderRadius: 9999,
+                      background: "#C9A34A",
+                      color: "#0B0B0B",
+                      fontSize: "0.62rem",
+                      fontWeight: 800,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "0 4px",
+                      boxShadow: "0 0 8px rgba(201, 163, 74, 0.6)",
+                    }}
+                  >
+                    {wishlistCount}
+                  </span>
+                )}
+              </button>
+
               {/* Shopping Bag / Cart */}
               <button
                 onClick={() => navigate(token ? "/bookings" : "/login")}
@@ -714,6 +760,17 @@ export function AppLayout() {
                   style={{ color: "rgba(255,255,255,0.8)", textDecoration: "none", fontSize: "1rem", fontFamily: "var(--font-serif)" }}
                 >
                   Buy Collection
+                </NavLink>
+                <NavLink
+                  to="/wishlist"
+                  style={{ color: location.pathname === "/wishlist" ? "#C9A34A" : "rgba(255,255,255,0.8)", textDecoration: "none", fontSize: "1rem", fontFamily: "var(--font-serif)", display: "flex", alignItems: "center", justifyContent: "space-between" }}
+                >
+                  <span>Atelier Wishlist</span>
+                  {wishlistCount > 0 && (
+                    <span style={{ padding: "2px 8px", borderRadius: 9999, background: "#C9A34A", color: "#0B0B0B", fontSize: "0.72rem", fontWeight: 700 }}>
+                      {wishlistCount}
+                    </span>
+                  )}
                 </NavLink>
                 <NavLink
                   to="/contact"

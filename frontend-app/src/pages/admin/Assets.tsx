@@ -560,7 +560,7 @@ export function AdminAssetsPage() {
   };
 
   return (
-    <div style={{ padding: "32px 24px 60px", maxWidth: 1320, margin: "0 auto", color: "#FFFFFF" }}>
+    <div style={{ padding: "28px 32px 60px", width: "100%", boxSizing: "border-box", color: "#FFFFFF" }}>
       
       {/* ── 1. EXECUTIVE HEADER ── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 26, flexWrap: "wrap", gap: 18 }}>
@@ -802,29 +802,38 @@ export function AdminAssetsPage() {
       </div>
 
       {/* ── 4. PRODUCT MANIFEST TABLE ── */}
-      <div style={{ background: "#141414", borderRadius: 16, border: "1px solid rgba(255, 255, 255, 0.08)", overflow: "hidden", boxShadow: "0 10px 40px rgba(0,0,0,0.5)" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+      <div
+        style={{
+          background: "#141414",
+          borderRadius: 16,
+          border: "1px solid rgba(255, 255, 255, 0.08)",
+          overflowX: "auto",
+          boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
+          scrollbarWidth: "thin",
+        }}
+      >
+        <table style={{ width: "100%", minWidth: 1240, borderCollapse: "collapse", textAlign: "left" }}>
           <thead>
             <tr style={{ background: "#191919", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
-              <th style={{ padding: "16px 20px", fontSize: "0.7rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>
+              <th style={{ width: "27%", minWidth: 280, padding: "16px 20px", fontSize: "0.72rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, verticalAlign: "middle" }}>
                 Garment & SKU
               </th>
-              <th style={{ padding: "16px 18px", fontSize: "0.7rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>
+              <th style={{ width: "13%", minWidth: 140, padding: "16px 16px", fontSize: "0.72rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, verticalAlign: "middle" }}>
                 Category
               </th>
-              <th style={{ padding: "16px 18px", fontSize: "0.7rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>
+              <th style={{ width: "11%", minWidth: 110, padding: "16px 14px", fontSize: "0.72rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, verticalAlign: "middle" }}>
                 Collection Type
               </th>
-              <th style={{ padding: "16px 18px", fontSize: "0.7rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>
+              <th style={{ width: "13%", minWidth: 140, padding: "16px 16px", fontSize: "0.72rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, verticalAlign: "middle" }}>
                 Pricing (Buy / Rent)
               </th>
-              <th style={{ padding: "16px 18px", fontSize: "0.7rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>
+              <th style={{ width: "11%", minWidth: 110, padding: "16px 14px", fontSize: "0.72rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, verticalAlign: "middle" }}>
                 Sizes
               </th>
-              <th style={{ padding: "16px 18px", fontSize: "0.7rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>
+              <th style={{ width: "12%", minWidth: 130, padding: "16px 16px", fontSize: "0.72rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, verticalAlign: "middle" }}>
                 Inventory Status
               </th>
-              <th style={{ padding: "16px 20px", fontSize: "0.7rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700, textAlign: "right" }}>
+              <th style={{ width: "13%", minWidth: 210, padding: "16px 20px", fontSize: "0.72rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700, textAlign: "right", verticalAlign: "middle" }}>
                 Actions
               </th>
             </tr>
@@ -866,14 +875,14 @@ export function AdminAssetsPage() {
                       }}
                     >
                       {/* Product Thumbnail & Name */}
-                      <td style={{ padding: "16px 20px" }}>
+                      <td style={{ padding: "16px 20px", verticalAlign: "middle" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                           <img
                             src={asset.image_url || "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=150&q=80"}
                             alt={grp.name}
                             style={{
-                              width: 54,
-                              height: 70,
+                              width: 52,
+                              height: 68,
                               borderRadius: 8,
                               objectFit: "cover",
                               border: "1px solid rgba(201, 163, 74, 0.25)",
@@ -881,12 +890,12 @@ export function AdminAssetsPage() {
                               flexShrink: 0,
                             }}
                           />
-                          <div>
-                            <span style={{ fontSize: "1rem", fontWeight: 600, color: "#FFFFFF", display: "block", textTransform: "capitalize", letterSpacing: "0.01em" }}>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <span style={{ fontSize: "0.94rem", fontWeight: 600, color: "#FFFFFF", display: "block", textTransform: "capitalize", letterSpacing: "0.01em", lineHeight: 1.35 }}>
                               {grp.name}
                             </span>
                             <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
-                              <span style={{ fontSize: "0.76rem", color: "#C9A34A", fontFamily: "monospace", fontWeight: 700, letterSpacing: "0.05em" }}>
+                              <span style={{ fontSize: "0.74rem", color: "#C9A34A", fontFamily: "monospace", fontWeight: 700, letterSpacing: "0.05em" }}>
                                 {grp.baseCode}
                               </span>
                               <span
@@ -898,9 +907,10 @@ export function AdminAssetsPage() {
                                   background: "rgba(201, 163, 74, 0.12)",
                                   border: "1px solid rgba(201, 163, 74, 0.25)",
                                   fontWeight: 600,
+                                  whiteSpace: "nowrap",
                                 }}
                               >
-                                {grp.totalStock} {grp.totalStock === 1 ? "unit" : "units tracked"}
+                                {grp.totalStock} {grp.totalStock === 1 ? "unit" : "units"}
                               </span>
                             </div>
                           </div>
@@ -908,7 +918,7 @@ export function AdminAssetsPage() {
                       </td>
 
                       {/* Category */}
-                      <td style={{ padding: "16px 18px" }}>
+                      <td style={{ padding: "16px 16px", verticalAlign: "middle" }}>
                         <span
                           style={{
                             padding: "4px 10px",
@@ -918,6 +928,7 @@ export function AdminAssetsPage() {
                             background: "rgba(255, 255, 255, 0.05)",
                             border: "1px solid rgba(255, 255, 255, 0.1)",
                             color: "#D4D4D4",
+                            display: "inline-block",
                             whiteSpace: "nowrap",
                           }}
                         >
@@ -926,7 +937,7 @@ export function AdminAssetsPage() {
                       </td>
 
                       {/* Listing Type */}
-                      <td style={{ padding: "16px 18px" }}>
+                      <td style={{ padding: "16px 14px", verticalAlign: "middle" }}>
                         <span
                           style={{
                             padding: "4px 12px",
@@ -953,6 +964,7 @@ export function AdminAssetsPage() {
                                 : lType === "buy"
                                 ? "1px solid rgba(59, 130, 246, 0.35)"
                                 : "1px solid rgba(168, 85, 247, 0.35)",
+                            display: "inline-block",
                             whiteSpace: "nowrap",
                           }}
                         >
@@ -961,37 +973,38 @@ export function AdminAssetsPage() {
                       </td>
 
                       {/* Pricing */}
-                      <td style={{ padding: "16px 18px" }}>
-                        <div style={{ fontSize: "0.85rem", lineHeight: 1.5 }}>
+                      <td style={{ padding: "16px 16px", verticalAlign: "middle" }}>
+                        <div style={{ fontSize: "0.82rem", lineHeight: 1.5, whiteSpace: "nowrap" }}>
                           {lType !== "rent" && (
                             <div style={{ color: "#FFFFFF" }}>
-                              <span style={{ color: "#777", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Buy: </span>
-                              <strong>{bPrice}</strong>
+                              <span style={{ color: "#888", fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Buy: </span>
+                              <strong style={{ color: "#FFFFFF" }}>{bPrice}</strong>
                             </div>
                           )}
                           {lType !== "buy" && (
                             <div style={{ color: "#C9A34A" }}>
-                              <span style={{ color: "#777", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Rent: </span>
-                              <strong>{rPrice}</strong>
+                              <span style={{ color: "#888", fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Rent: </span>
+                              <strong style={{ color: "#C9A34A" }}>{rPrice}</strong>
                             </div>
                           )}
                         </div>
                       </td>
 
                       {/* Sizes as Elegant Chips */}
-                      <td style={{ padding: "16px 18px" }}>
-                        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", maxWidth: 140 }}>
+                      <td style={{ padding: "16px 14px", verticalAlign: "middle" }}>
+                        <div style={{ display: "flex", gap: 4, flexWrap: "wrap", maxWidth: 120 }}>
                           {sizeList.map((sz: string) => (
                             <span
                               key={sz}
                               style={{
-                                padding: "2px 7px",
+                                padding: "2px 6px",
                                 borderRadius: 4,
                                 background: "#1F1F1F",
                                 border: "1px solid rgba(255, 255, 255, 0.12)",
                                 fontSize: "0.68rem",
                                 fontWeight: 700,
                                 color: "#FFFFFF",
+                                whiteSpace: "nowrap",
                               }}
                             >
                               {sz}
@@ -1001,8 +1014,8 @@ export function AdminAssetsPage() {
                       </td>
 
                       {/* Inventory Status with breakdown */}
-                      <td style={{ padding: "16px 18px" }}>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                      <td style={{ padding: "16px 16px", verticalAlign: "middle" }}>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 3, whiteSpace: "nowrap" }}>
                           <div>
                             {grp.availableStock > 0 ? (
                               <span
@@ -1057,8 +1070,8 @@ export function AdminAssetsPage() {
                       </td>
 
                       {/* Actions */}
-                      <td style={{ padding: "16px 20px", textAlign: "right" }}>
-                        <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", alignItems: "center" }}>
+                      <td style={{ padding: "16px 20px", textAlign: "right", verticalAlign: "middle" }}>
+                        <div style={{ display: "inline-flex", gap: 6, justifyContent: "flex-end", alignItems: "center", whiteSpace: "nowrap" }}>
                           <button
                             onClick={() => toggleGroupExpand(grp.groupKey)}
                             style={{

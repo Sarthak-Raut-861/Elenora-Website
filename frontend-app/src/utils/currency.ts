@@ -26,3 +26,4 @@ export function formatINR(amount: number | string | null | undefined, fallback =
     maximumFractionDigits: 0,
   }).format(num);
 }
+

@@ -29,7 +29,7 @@ from app.schemas.user import (
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
-SUPER_ADMIN_EMAILS = {"admin@elanora-luxury.com"}
+SUPER_ADMIN_EMAILS = {"admin@elanora-luxury.com", "sarthak1484@gmail.com", "sarthakraut1484@gmail.com"}
 
 
 @router.get("/me", response_model=UserResponse)

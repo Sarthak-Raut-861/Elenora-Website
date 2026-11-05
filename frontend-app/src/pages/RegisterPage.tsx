@@ -94,9 +94,12 @@ export function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    let cleanEmail = email.trim().toLowerCase();
+    if (cleanEmail.endsWith("@gmail.co")) cleanEmail = cleanEmail + "m";
+    const cleanName = fullName.trim();
     const newErrors: Record<string, string | null> = {
-      fullName: validateName(fullName),
-      email: validateEmail(email),
+      fullName: validateName(cleanName),
+      email: validateEmail(cleanEmail),
       password: validatePassword(password),
       confirmPassword: confirmPassword !== password ? "Passwords do not match" : null,
     };
@@ -107,9 +110,9 @@ export function RegisterPage() {
     setError("");
     setLoading(true);
     try {
-      await register({ full_name: fullName, email, password });
+      await register({ full_name: cleanName, email: cleanEmail, password });
       setSuccess(true);
-      setTimeout(() => navigate("/login"), 1500);
+      setTimeout(() => navigate("/login", { state: { email: cleanEmail } }), 1200);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {

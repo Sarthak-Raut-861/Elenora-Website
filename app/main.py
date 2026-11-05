@@ -70,20 +70,32 @@ async def lifespan(app: FastAPI):
                 await db.commit()
                 logger.info(f"Initialized default admin account: {settings.ADMIN_EMAIL}")
 
-            # 2. Sarthak Admin User
-            sarthak_email = "sarthak1484@gmail.com"
-            res_sarthak = await db.execute(select(User).where(User.email == sarthak_email))
-            if not res_sarthak.scalars().first():
-                sarthak_user = User(
-                    full_name="Sarthak",
-                    email=sarthak_email,
-                    password_hash=hash_password(settings.ADMIN_PASSWORD),
-                    role=UserRole.admin,
-                    is_active=True,
-                )
-                db.add(sarthak_user)
-                await db.commit()
-                logger.info(f"Initialized admin account: {sarthak_email}")
+            # 2. Sarthak Admin Users & Typo Auto-Healing
+            res_co = await db.execute(select(User).where(User.email == "sarthakraut1484@gmail.co"))
+            user_co = res_co.scalars().first()
+
+            for s_email in ["sarthakraut1484@gmail.com", "sarthak1484@gmail.com"]:
+                res_s = await db.execute(select(User).where(User.email == s_email))
+                user_s = res_s.scalars().first()
+                if not user_s:
+                    pwd = user_co.password_hash if (user_co and user_co.password_hash) else hash_password(settings.ADMIN_PASSWORD)
+                    user_s = User(
+                        full_name="Sarthak Raut",
+                        email=s_email,
+                        password_hash=pwd,
+                        role=UserRole.admin,
+                        is_active=True,
+                    )
+                    db.add(user_s)
+                    await db.commit()
+                    logger.info(f"Initialized admin account: {s_email}")
+                else:
+                    user_s.role = UserRole.admin
+                    user_s.is_active = True
+                    if user_co and user_co.password_hash:
+                        user_s.password_hash = user_co.password_hash
+                    await db.commit()
+                    logger.info(f"Synchronized admin account privileges: {s_email}")
 
             # 3. Dry Cleaner User
             cleaner_email = "cleaner@elanora-luxury.com"

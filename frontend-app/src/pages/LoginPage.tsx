@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { AlertCircle, Eye, EyeOff, Mail, Lock, Loader2, Check, Crown } from "lucide-react";
 import { useAuth } from "../auth-context";
 import { validateEmail } from "../utils/validation";
@@ -17,7 +17,9 @@ function FieldError({ message }: { message: string | null }) {
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const location = useLocation();
+  const prefillEmail = (location.state as any)?.email || "";
+  const [email, setEmail] = useState(prefillEmail);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -45,8 +47,9 @@ export function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanEmail = email.trim().toLowerCase();
     const newErrors = {
-      email: validateEmail(email),
+      email: validateEmail(cleanEmail),
       password: !password ? "Password is required" : password.length < 8 ? "Password must be at least 8 characters" : null,
     };
     setErrors(newErrors);
@@ -55,8 +58,15 @@ export function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      const me = await login({ email, password });
-      navigate(me.role === "admin" || me.role === "staff" ? "/admin" : "/");
+      const me = await login({ email: cleanEmail, password });
+      const from = (location.state as any)?.from;
+      if (from) {
+        navigate(from, { replace: true });
+      } else if (me.role === "admin" || me.role === "staff") {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {

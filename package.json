@@ -6,3 +6,4 @@
     "build": "npm --prefix frontend-app install && npm --prefix frontend-app run build"
   }
 }
+

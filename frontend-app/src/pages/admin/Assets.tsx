@@ -560,116 +560,222 @@ export function AdminAssetsPage() {
   };
 
   return (
-    <div style={{ padding: "32px 24px", maxWidth: 1260, margin: "0 auto", color: "#FFFFFF" }}>
+    <div style={{ padding: "32px 24px 60px", maxWidth: 1320, margin: "0 auto", color: "#FFFFFF" }}>
       
-      {/* ── TOP HEADER (MATCHES MOCKUP SCREEN 2: PRODUCT MANAGEMENT) ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28, flexWrap: "wrap", gap: 16 }}>
+      {/* ── 1. EXECUTIVE HEADER ── */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 26, flexWrap: "wrap", gap: 18 }}>
         <div>
-          <span style={{ fontSize: "0.72rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "#C9A34A", fontWeight: 700 }}>
-            INVENTORY & CATALOG CONTROL
-          </span>
-          <h1 style={{ fontFamily: "var(--font-serif)", fontSize: "2.2rem", color: "#FFFFFF", fontWeight: 500, margin: "4px 0 0" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#C9A34A", boxShadow: "0 0 10px #C9A34A" }} />
+            <span style={{ fontSize: "0.72rem", letterSpacing: "0.22em", textTransform: "uppercase", color: "#C9A34A", fontWeight: 700 }}>
+              ATELIER MANIFEST & INVENTORY CONTROL
+            </span>
+          </div>
+          <h1 style={{ fontFamily: "var(--font-brand)", fontSize: "2.3rem", color: "#FFFFFF", fontWeight: 600, margin: "2px 0 6px", letterSpacing: "0.02em" }}>
             Product Management
           </h1>
-          <p style={{ color: "var(--color-text-muted)", fontSize: "0.88rem", marginTop: 4 }}>
-            Manage Rent Vault & Buy collections, dual pricing, sizes, and color variant photos.
+          <p style={{ color: "var(--color-text-muted)", fontSize: "0.88rem", maxWidth: 620, margin: 0 }}>
+            Unified catalog master controls, bulk unit tracking, retail & rental pricing, sizes, and care lifecycle.
           </p>
         </div>
 
         <button
           onClick={openAddModal}
-          className="btn-rose-primary"
-          style={{ padding: "12px 24px", fontSize: "0.85rem", fontWeight: 700, boxShadow: "0 4px 18px rgba(235, 137, 164, 0.35)" }}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "12px 24px",
+            fontSize: "0.82rem",
+            fontWeight: 700,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            borderRadius: "10px",
+            border: "none",
+            cursor: "pointer",
+            background: "linear-gradient(135deg, #C9A34A 0%, #A8822B 100%)",
+            color: "#0B0B0B",
+            boxShadow: "0 6px 22px rgba(201, 163, 74, 0.35)",
+            transition: "all 0.2s ease",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
         >
-          <Plus size={18} /> + Add Product
+          <Plus size={16} strokeWidth={2.5} /> Add Garment Style
         </button>
       </div>
 
-      {/* ── SEGMENTED FILTER TABS: All, Sale, Rental (MATCHING MOCKUP) ── */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 16 }}>
+      {/* ── 2. EXECUTIVE KPI METRIC CARDS ── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16, marginBottom: 28 }}>
+        {/* Card 1: Master Styles */}
+        <div style={{ background: "#141414", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 14, padding: "18px 20px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <span style={{ fontSize: "0.72rem", color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700 }}>
+              Active Designs
+            </span>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(201, 163, 74, 0.12)", display: "flex", alignItems: "center", justifyContent: "center", color: "#C9A34A" }}>
+              <Package2 size={16} />
+            </div>
+          </div>
+          <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "#FFFFFF", fontFamily: "var(--font-brand)" }}>
+            {groupedAssets.length} <span style={{ fontSize: "0.85rem", fontWeight: 500, color: "#888" }}>Styles</span>
+          </div>
+          <span style={{ fontSize: "0.74rem", color: "#A3A3A3", marginTop: 4, display: "block" }}>
+            Curated collections in store
+          </span>
+        </div>
+
+        {/* Card 2: Total Units Tracked */}
+        <div style={{ background: "#141414", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 14, padding: "18px 20px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <span style={{ fontSize: "0.72rem", color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700 }}>
+              Physical Inventory
+            </span>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(255, 255, 255, 0.08)", display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF" }}>
+              <Layers size={16} />
+            </div>
+          </div>
+          <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "#FFFFFF", fontFamily: "var(--font-brand)" }}>
+            {assets.length} <span style={{ fontSize: "0.85rem", fontWeight: 500, color: "#888" }}>Units</span>
+          </div>
+          <span style={{ fontSize: "0.74rem", color: "#A3A3A3", marginTop: 4, display: "block" }}>
+            Total individual barcodes serialized
+          </span>
+        </div>
+
+        {/* Card 3: Ready for Clients */}
+        <div style={{ background: "#141414", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 14, padding: "18px 20px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <span style={{ fontSize: "0.72rem", color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700 }}>
+              Available in Atelier
+            </span>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(34, 197, 94, 0.12)", display: "flex", alignItems: "center", justifyContent: "center", color: "#4ade80" }}>
+              <CheckCircle2 size={16} />
+            </div>
+          </div>
+          <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "#4ade80", fontFamily: "var(--font-brand)" }}>
+            {assets.filter((a) => a.status === "available" && !a.is_in_dry_cleaning && a.is_active).length}{" "}
+            <span style={{ fontSize: "0.85rem", fontWeight: 500, color: "#888" }}>Units</span>
+          </div>
+          <span style={{ fontSize: "0.74rem", color: "#A3A3A3", marginTop: 4, display: "block" }}>
+            Ready for instant purchase & rental
+          </span>
+        </div>
+
+        {/* Card 4: Laundry & Client Care */}
+        <div style={{ background: "#141414", border: "1px solid rgba(255, 255, 255, 0.08)", borderRadius: 14, padding: "18px 20px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <span style={{ fontSize: "0.72rem", color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 700 }}>
+              Care & Rented
+            </span>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(201, 163, 74, 0.12)", display: "flex", alignItems: "center", justifyContent: "center", color: "#C9A34A" }}>
+              <Sparkles size={16} />
+            </div>
+          </div>
+          <div style={{ fontSize: "1.75rem", fontWeight: 700, color: "#E6CA65", fontFamily: "var(--font-brand)" }}>
+            {assets.filter((a) => a.is_in_dry_cleaning || a.status === "rented" || a.status === "allocated").length}{" "}
+            <span style={{ fontSize: "0.85rem", fontWeight: 500, color: "#888" }}>Units</span>
+          </div>
+          <span style={{ fontSize: "0.74rem", color: "#A3A3A3", marginTop: 4, display: "block" }}>
+            In laundry sanitization or active rent
+          </span>
+        </div>
+      </div>
+
+      {/* ── 3. FILTER TABS & SEARCH BAR ── */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 14 }}>
+        {/* Luxury Champagne Gold Filter Tabs */}
         <div
           style={{
             display: "inline-flex",
             alignItems: "center",
             background: "#141414",
             padding: "4px",
-            borderRadius: "12px",
-            border: "1px solid rgba(255, 255, 255, 0.1)",
+            borderRadius: "10px",
+            border: "1px solid rgba(255, 255, 255, 0.08)",
           }}
         >
           <button
             onClick={() => setActiveTab("all")}
             style={{
-              padding: "8px 20px",
+              padding: "8px 18px",
               borderRadius: "8px",
-              fontSize: "0.78rem",
+              fontSize: "0.76rem",
               fontWeight: 700,
               textTransform: "uppercase",
-              border: "none",
+              letterSpacing: "0.04em",
+              border: activeTab === "all" ? "1px solid rgba(201, 163, 74, 0.4)" : "1px solid transparent",
               cursor: "pointer",
-              background: activeTab === "all" ? "#EB89A4" : "transparent",
-              color: activeTab === "all" ? "#0B0B0B" : "#A3A3A3",
-              transition: "all 0.2s",
+              background: activeTab === "all" ? "rgba(201, 163, 74, 0.18)" : "transparent",
+              color: activeTab === "all" ? "#F5DF9E" : "#888888",
+              boxShadow: activeTab === "all" ? "0 2px 10px rgba(201, 163, 74, 0.2)" : "none",
+              transition: "all 0.15s ease",
             }}
           >
-            All Products ({assets.length})
+            All Styles ({groupedAssets.length})
           </button>
           <button
             onClick={() => setActiveTab("sale")}
             style={{
-              padding: "8px 20px",
+              padding: "8px 18px",
               borderRadius: "8px",
-              fontSize: "0.78rem",
+              fontSize: "0.76rem",
               fontWeight: 700,
               textTransform: "uppercase",
-              border: "none",
+              letterSpacing: "0.04em",
+              border: activeTab === "sale" ? "1px solid rgba(201, 163, 74, 0.4)" : "1px solid transparent",
               cursor: "pointer",
-              background: activeTab === "sale" ? "#EB89A4" : "transparent",
-              color: activeTab === "sale" ? "#0B0B0B" : "#A3A3A3",
-              transition: "all 0.2s",
+              background: activeTab === "sale" ? "rgba(201, 163, 74, 0.18)" : "transparent",
+              color: activeTab === "sale" ? "#F5DF9E" : "#888888",
+              boxShadow: activeTab === "sale" ? "0 2px 10px rgba(201, 163, 74, 0.2)" : "none",
+              transition: "all 0.15s ease",
             }}
           >
-            🛍️ Sale / Buy ({assets.filter((a) => (a.listing_type || "both") !== "rent").length})
+            🛍️ Buy / RTW ({groupedAssets.filter((g) => (g.primaryAsset.listing_type || "both") !== "rent").length})
           </button>
           <button
             onClick={() => setActiveTab("rental")}
             style={{
-              padding: "8px 20px",
+              padding: "8px 18px",
               borderRadius: "8px",
-              fontSize: "0.78rem",
+              fontSize: "0.76rem",
               fontWeight: 700,
               textTransform: "uppercase",
-              border: "none",
+              letterSpacing: "0.04em",
+              border: activeTab === "rental" ? "1px solid rgba(201, 163, 74, 0.4)" : "1px solid transparent",
               cursor: "pointer",
-              background: activeTab === "rental" ? "#EB89A4" : "transparent",
-              color: activeTab === "rental" ? "#0B0B0B" : "#A3A3A3",
-              transition: "all 0.2s",
+              background: activeTab === "rental" ? "rgba(201, 163, 74, 0.18)" : "transparent",
+              color: activeTab === "rental" ? "#F5DF9E" : "#888888",
+              boxShadow: activeTab === "rental" ? "0 2px 10px rgba(201, 163, 74, 0.2)" : "none",
+              transition: "all 0.15s ease",
             }}
           >
-            👗 Rental ({assets.filter((a) => (a.listing_type || "both") !== "buy").length})
+            👗 Rental Vault ({groupedAssets.filter((g) => (g.primaryAsset.listing_type || "both") !== "buy").length})
           </button>
         </div>
 
         {/* Search & Category Filter */}
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <div style={{ position: "relative", width: 260 }}>
-            <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#888" }} />
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <div style={{ position: "relative", width: 280 }}>
+            <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#C9A34A" }} />
             <input
               type="text"
-              placeholder="Search product code or name..."
+              placeholder="Search design title or SKU..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{
                 width: "100%",
                 boxSizing: "border-box",
-                padding: "8px 14px 8px 36px",
+                padding: "9px 14px 9px 36px",
                 borderRadius: 8,
-                background: "#181818",
+                background: "#161616",
                 border: "1px solid rgba(255, 255, 255, 0.12)",
                 color: "#FFFFFF",
                 fontSize: "0.82rem",
                 outline: "none",
               }}
+              onFocus={(e) => (e.currentTarget.style.borderColor = "#C9A34A")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.12)")}
             />
           </div>
 
@@ -677,16 +783,17 @@ export function AdminAssetsPage() {
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
             style={{
-              padding: "8px 14px",
+              padding: "9px 14px",
               borderRadius: 8,
-              background: "#181818",
+              background: "#161616",
               border: "1px solid rgba(255, 255, 255, 0.12)",
               color: "#FFFFFF",
               fontSize: "0.82rem",
               outline: "none",
+              cursor: "pointer",
             }}
           >
-            <option value="all">All Categories</option>
+            <option value="all">All Atelier Categories</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
@@ -694,73 +801,159 @@ export function AdminAssetsPage() {
         </div>
       </div>
 
-      {/* ── PRODUCT MANIFEST TABLE (MATCHING MOCKUP SCREEN 2) ── */}
-      <div style={{ background: "#141414", borderRadius: 16, border: "1px solid rgba(255, 255, 255, 0.08)", overflow: "hidden" }}>
+      {/* ── 4. PRODUCT MANIFEST TABLE ── */}
+      <div style={{ background: "#141414", borderRadius: 16, border: "1px solid rgba(255, 255, 255, 0.08)", overflow: "hidden", boxShadow: "0 10px 40px rgba(0,0,0,0.5)" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
           <thead>
-            <tr style={{ background: "#181818", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
-              <th style={{ padding: "16px 20px", fontSize: "0.72rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.08em" }}>Product & Code</th>
-              <th style={{ padding: "16px 20px", fontSize: "0.72rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.08em" }}>Type</th>
-              <th style={{ padding: "16px 20px", fontSize: "0.72rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.08em" }}>Pricing (Buy / Rent)</th>
-              <th style={{ padding: "16px 20px", fontSize: "0.72rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.08em" }}>Sizes & Colors</th>
-              <th style={{ padding: "16px 20px", fontSize: "0.72rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.08em" }}>Inventory Status</th>
-              <th style={{ padding: "16px 20px", fontSize: "0.72rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.08em", textAlign: "right" }}>Actions</th>
+            <tr style={{ background: "#191919", borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
+              <th style={{ padding: "16px 20px", fontSize: "0.7rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>
+                Garment & SKU
+              </th>
+              <th style={{ padding: "16px 18px", fontSize: "0.7rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>
+                Category
+              </th>
+              <th style={{ padding: "16px 18px", fontSize: "0.7rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>
+                Collection Type
+              </th>
+              <th style={{ padding: "16px 18px", fontSize: "0.7rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>
+                Pricing (Buy / Rent)
+              </th>
+              <th style={{ padding: "16px 18px", fontSize: "0.7rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>
+                Sizes
+              </th>
+              <th style={{ padding: "16px 18px", fontSize: "0.7rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700 }}>
+                Inventory Status
+              </th>
+              <th style={{ padding: "16px 20px", fontSize: "0.7rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 700, textAlign: "right" }}>
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody>
             {groupedAssets.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ padding: "48px 20px", textAlign: "center", color: "var(--color-text-muted)" }}>
-                  No products found for this section. Click "+ Add Product" to create one.
+                <td colSpan={7} style={{ padding: "64px 20px", textAlign: "center", color: "var(--color-text-muted)" }}>
+                  <div style={{ maxWidth: 360, margin: "0 auto" }}>
+                    <div style={{ width: 48, height: 48, borderRadius: "50%", background: "rgba(201, 163, 74, 0.1)", display: "flex", alignItems: "center", justifyContent: "center", color: "#C9A34A", margin: "0 auto 14px" }}>
+                      <Package2 size={24} />
+                    </div>
+                    <p style={{ fontSize: "1rem", color: "#FFFFFF", fontWeight: 600, margin: "0 0 6px" }}>No garments in this filter</p>
+                    <p style={{ fontSize: "0.82rem", color: "#888", margin: "0 0 16px" }}>Click the "+ Add Garment Style" button above to add couture pieces to your manifest.</p>
+                    <button onClick={openAddModal} className="btn-rose-primary" style={{ padding: "8px 18px", fontSize: "0.78rem" }}>
+                      + Add First Garment
+                    </button>
+                  </div>
                 </td>
               </tr>
             ) : (
               groupedAssets.map((grp: any) => {
                 const asset = grp.primaryAsset;
-                const bPrice = asset.buy_price ? `₹${asset.buy_price.toLocaleString("en-IN")}` : "₹8,999";
-                const rPrice = asset.rental_price ? `₹${asset.rental_price.toLocaleString("en-IN")}/day` : "₹2,499/day";
+                const bPrice = asset.buy_price ? `₹${asset.buy_price.toLocaleString("en-IN")}` : "-";
+                const rPrice = asset.rental_price ? `₹${asset.rental_price.toLocaleString("en-IN")}/day` : "-";
                 const lType = asset.listing_type || "both";
                 const isExpanded = Boolean(expandedGroups[grp.groupKey]);
+                const catObj = categories.find((c) => c.id === grp.category_id);
+                const categoryName = catObj ? catObj.name : "Haute Couture";
+                const sizeList = asset.sizes ? asset.sizes.split(",").map((s: string) => s.trim()).filter(Boolean) : ["XS", "S", "M", "L", "XL"];
 
                 return (
                   <React.Fragment key={grp.groupKey}>
-                    <tr style={{ borderBottom: isExpanded ? "none" : "1px solid rgba(255, 255, 255, 0.04)", background: isExpanded ? "rgba(201, 163, 74, 0.04)" : "transparent" }}>
-                      {/* Thumbnail & Product Details */}
-                      <td style={{ padding: "14px 20px" }}>
+                    <tr
+                      style={{
+                        borderBottom: isExpanded ? "none" : "1px solid rgba(255, 255, 255, 0.05)",
+                        background: isExpanded ? "rgba(201, 163, 74, 0.03)" : "transparent",
+                        transition: "background 0.15s ease",
+                      }}
+                    >
+                      {/* Product Thumbnail & Name */}
+                      <td style={{ padding: "16px 20px" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                           <img
-                            src={asset.image_url || "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=100&q=80"}
+                            src={asset.image_url || "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=150&q=80"}
                             alt={grp.name}
-                            style={{ width: 48, height: 48, borderRadius: 8, objectFit: "cover", border: "1px solid rgba(255,255,255,0.1)" }}
+                            style={{
+                              width: 54,
+                              height: 70,
+                              borderRadius: 8,
+                              objectFit: "cover",
+                              border: "1px solid rgba(201, 163, 74, 0.25)",
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
+                              flexShrink: 0,
+                            }}
                           />
                           <div>
-                            <span style={{ fontSize: "0.92rem", fontWeight: 600, color: "#FFFFFF", display: "block" }}>
+                            <span style={{ fontSize: "1rem", fontWeight: 600, color: "#FFFFFF", display: "block", textTransform: "capitalize", letterSpacing: "0.01em" }}>
                               {grp.name}
                             </span>
-                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-                              <span style={{ fontSize: "0.75rem", color: "#C9A34A", fontFamily: "monospace", fontWeight: 700 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
+                              <span style={{ fontSize: "0.76rem", color: "#C9A34A", fontFamily: "monospace", fontWeight: 700, letterSpacing: "0.05em" }}>
                                 {grp.baseCode}
                               </span>
-                              <span style={{ fontSize: "0.68rem", color: "#A3A3A3", padding: "1px 6px", borderRadius: 4, background: "rgba(255,255,255,0.06)" }}>
-                                {grp.totalStock} {grp.totalStock === 1 ? "unit" : "units"}
+                              <span
+                                style={{
+                                  fontSize: "0.68rem",
+                                  color: "#E2C375",
+                                  padding: "2px 8px",
+                                  borderRadius: 9999,
+                                  background: "rgba(201, 163, 74, 0.12)",
+                                  border: "1px solid rgba(201, 163, 74, 0.25)",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {grp.totalStock} {grp.totalStock === 1 ? "unit" : "units tracked"}
                               </span>
                             </div>
                           </div>
                         </div>
                       </td>
 
-                      {/* Listing Type */}
-                      <td style={{ padding: "14px 20px" }}>
+                      {/* Category */}
+                      <td style={{ padding: "16px 18px" }}>
                         <span
                           style={{
                             padding: "4px 10px",
+                            borderRadius: 6,
+                            fontSize: "0.72rem",
+                            fontWeight: 600,
+                            background: "rgba(255, 255, 255, 0.05)",
+                            border: "1px solid rgba(255, 255, 255, 0.1)",
+                            color: "#D4D4D4",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {categoryName}
+                        </span>
+                      </td>
+
+                      {/* Listing Type */}
+                      <td style={{ padding: "16px 18px" }}>
+                        <span
+                          style={{
+                            padding: "4px 12px",
                             borderRadius: 9999,
                             fontSize: "0.7rem",
                             fontWeight: 700,
                             textTransform: "uppercase",
-                            background: lType === "rent" ? "rgba(201, 163, 74, 0.15)" : lType === "buy" ? "rgba(235, 137, 164, 0.15)" : "rgba(255, 255, 255, 0.1)",
-                            color: lType === "rent" ? "#C9A34A" : lType === "buy" ? "#EB89A4" : "#FFFFFF",
-                            border: lType === "rent" ? "1px solid rgba(201, 163, 74, 0.3)" : lType === "buy" ? "1px solid rgba(235, 137, 164, 0.3)" : "1px solid rgba(255, 255, 255, 0.2)",
+                            letterSpacing: "0.05em",
+                            background:
+                              lType === "rent"
+                                ? "rgba(201, 163, 74, 0.15)"
+                                : lType === "buy"
+                                ? "rgba(59, 130, 246, 0.15)"
+                                : "rgba(168, 85, 247, 0.15)",
+                            color:
+                              lType === "rent"
+                                ? "#C9A34A"
+                                : lType === "buy"
+                                ? "#60A5FA"
+                                : "#C084FC",
+                            border:
+                              lType === "rent"
+                                ? "1px solid rgba(201, 163, 74, 0.35)"
+                                : lType === "buy"
+                                ? "1px solid rgba(59, 130, 246, 0.35)"
+                                : "1px solid rgba(168, 85, 247, 0.35)",
+                            whiteSpace: "nowrap",
                           }}
                         >
                           {lType === "rent" ? "Rental Only" : lType === "buy" ? "Sale Only" : "Rent & Sale"}
@@ -768,30 +961,47 @@ export function AdminAssetsPage() {
                       </td>
 
                       {/* Pricing */}
-                      <td style={{ padding: "14px 20px" }}>
+                      <td style={{ padding: "16px 18px" }}>
                         <div style={{ fontSize: "0.85rem", lineHeight: 1.5 }}>
                           {lType !== "rent" && (
                             <div style={{ color: "#FFFFFF" }}>
-                              <span style={{ color: "#888", fontSize: "0.72rem" }}>Buy: </span>
+                              <span style={{ color: "#777", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Buy: </span>
                               <strong>{bPrice}</strong>
                             </div>
                           )}
                           {lType !== "buy" && (
-                            <div style={{ color: "#EB89A4" }}>
-                              <span style={{ color: "#888", fontSize: "0.72rem" }}>Rent: </span>
+                            <div style={{ color: "#C9A34A" }}>
+                              <span style={{ color: "#777", fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Rent: </span>
                               <strong>{rPrice}</strong>
                             </div>
                           )}
                         </div>
                       </td>
 
-                      {/* Sizes & Colors */}
-                      <td style={{ padding: "14px 20px", fontSize: "0.8rem", color: "#A3A3A3" }}>
-                        <div>{asset.sizes || "XS, S, M, L, XL"}</div>
+                      {/* Sizes as Elegant Chips */}
+                      <td style={{ padding: "16px 18px" }}>
+                        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", maxWidth: 140 }}>
+                          {sizeList.map((sz: string) => (
+                            <span
+                              key={sz}
+                              style={{
+                                padding: "2px 7px",
+                                borderRadius: 4,
+                                background: "#1F1F1F",
+                                border: "1px solid rgba(255, 255, 255, 0.12)",
+                                fontSize: "0.68rem",
+                                fontWeight: 700,
+                                color: "#FFFFFF",
+                              }}
+                            >
+                              {sz}
+                            </span>
+                          ))}
+                        </div>
                       </td>
 
                       {/* Inventory Status with breakdown */}
-                      <td style={{ padding: "14px 20px" }}>
+                      <td style={{ padding: "16px 18px" }}>
                         <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                           <div>
                             {grp.availableStock > 0 ? (
@@ -801,15 +1011,16 @@ export function AdminAssetsPage() {
                                   borderRadius: 9999,
                                   fontSize: "0.72rem",
                                   fontWeight: 700,
-                                  background: "rgba(34, 197, 94, 0.15)",
+                                  background: "rgba(34, 197, 94, 0.12)",
                                   color: "#4ade80",
                                   border: "1px solid rgba(34, 197, 94, 0.3)",
                                   display: "inline-flex",
                                   alignItems: "center",
                                   gap: 5,
+                                  whiteSpace: "nowrap",
                                 }}
                               >
-                                ● In Stock ({grp.availableStock}/{grp.totalStock} available)
+                                ● In Stock ({grp.availableStock}/{grp.totalStock})
                               </span>
                             ) : (
                               <span
@@ -818,46 +1029,53 @@ export function AdminAssetsPage() {
                                   borderRadius: 9999,
                                   fontSize: "0.72rem",
                                   fontWeight: 700,
-                                  background: "rgba(239, 68, 68, 0.15)",
+                                  background: "rgba(239, 68, 68, 0.12)",
                                   color: "#f87171",
                                   border: "1px solid rgba(239, 68, 68, 0.3)",
                                   display: "inline-flex",
                                   alignItems: "center",
                                   gap: 5,
+                                  whiteSpace: "nowrap",
                                 }}
                               >
-                                ● Out of Stock ({grp.totalStock} units)
+                                ● Out of Stock
                               </span>
                             )}
                           </div>
-                          {(grp.rentedStock > 0 || grp.dryCleaningStock > 0) && (
+                          {(grp.rentedStock > 0 || grp.dryCleaningStock > 0) ? (
                             <span style={{ fontSize: "0.68rem", color: "#888" }}>
                               {grp.rentedStock > 0 && `${grp.rentedStock} Rented`}
                               {grp.rentedStock > 0 && grp.dryCleaningStock > 0 && " · "}
                               {grp.dryCleaningStock > 0 && `${grp.dryCleaningStock} Laundry`}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: "0.68rem", color: "#666" }}>
+                              100% available
                             </span>
                           )}
                         </div>
                       </td>
 
                       {/* Actions */}
-                      <td style={{ padding: "14px 20px", textAlign: "right" }}>
+                      <td style={{ padding: "16px 20px", textAlign: "right" }}>
                         <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", alignItems: "center" }}>
                           <button
                             onClick={() => toggleGroupExpand(grp.groupKey)}
                             style={{
-                              padding: "6px 10px",
+                              height: 32,
+                              padding: "0 10px",
                               borderRadius: 6,
-                              background: isExpanded ? "rgba(201, 163, 74, 0.2)" : "rgba(255, 255, 255, 0.06)",
-                              border: isExpanded ? "1px solid #C9A34A" : "1px solid rgba(255, 255, 255, 0.12)",
-                              color: isExpanded ? "#C9A34A" : "#CCCCCC",
+                              background: isExpanded ? "rgba(201, 163, 74, 0.2)" : "#1B1B1B",
+                              border: isExpanded ? "1px solid #C9A34A" : "1px solid rgba(255, 255, 255, 0.14)",
+                              color: isExpanded ? "#C9A34A" : "#FFFFFF",
                               cursor: "pointer",
                               display: "inline-flex",
                               alignItems: "center",
-                              gap: 4,
+                              gap: 5,
                               fontSize: "0.74rem",
                               fontWeight: 600,
                               transition: "all 0.15s ease",
+                              whiteSpace: "nowrap",
                             }}
                             title="Inspect individual physical garments"
                           >
@@ -872,7 +1090,8 @@ export function AdminAssetsPage() {
                               setAddStockQty(1);
                             }}
                             style={{
-                              padding: "6px 10px",
+                              height: 32,
+                              padding: "0 10px",
                               borderRadius: 6,
                               background: "rgba(201, 163, 74, 0.12)",
                               border: "1px solid rgba(201, 163, 74, 0.35)",
@@ -883,8 +1102,9 @@ export function AdminAssetsPage() {
                               gap: 4,
                               fontSize: "0.74rem",
                               fontWeight: 600,
+                              whiteSpace: "nowrap",
                             }}
-                            title="Add more stock units to this product style"
+                            title="Add more physical garments to this product style"
                           >
                             <Plus size={13} /> Add Stock
                           </button>
@@ -892,10 +1112,11 @@ export function AdminAssetsPage() {
                           <button
                             onClick={() => openEditModal(asset)}
                             style={{
-                              padding: "6px 10px",
+                              height: 32,
+                              padding: "0 10px",
                               borderRadius: 6,
-                              background: "rgba(255, 255, 255, 0.06)",
-                              border: "1px solid rgba(255, 255, 255, 0.15)",
+                              background: "#1B1B1B",
+                              border: "1px solid rgba(255, 255, 255, 0.14)",
                               color: "#FFFFFF",
                               cursor: "pointer",
                               display: "inline-flex",
@@ -912,12 +1133,16 @@ export function AdminAssetsPage() {
                           <button
                             onClick={() => setRetiringGroup(grp)}
                             style={{
-                              padding: "6px 8px",
+                              height: 32,
+                              width: 32,
                               borderRadius: 6,
                               background: "rgba(239, 68, 68, 0.1)",
                               border: "1px solid rgba(239, 68, 68, 0.25)",
                               color: "#f87171",
                               cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
                             }}
                             title="Retire All Units of this Garment"
                           >
@@ -930,14 +1155,14 @@ export function AdminAssetsPage() {
                     {/* Expandable Physical Units Drawer */}
                     {isExpanded && (
                       <tr style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.08)" }}>
-                        <td colSpan={6} style={{ background: "#0E0E0E", padding: "16px 22px 20px 22px" }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <span style={{ fontSize: "0.72rem", color: "#C9A34A", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                                Physical Unit Inventory Tracking ({grp.units.length} Units)
+                        <td colSpan={7} style={{ background: "#0B0B0B", padding: "18px 24px 22px 24px", borderLeft: "3px solid #C9A34A" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                            <div>
+                              <span style={{ fontSize: "0.72rem", color: "#C9A34A", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                                PHYSICAL BARCODE LIFECYCLE TRACKING ({grp.units.length} UNITS)
                               </span>
-                              <span style={{ fontSize: "0.7rem", color: "#888" }}>
-                                Individual serial barcodes for white-glove lifecycle and sanitization.
+                              <span style={{ fontSize: "0.72rem", color: "#888", display: "block", marginTop: 2 }}>
+                                Serial codes for dry cleaning, inspection, client dispatch, and return verification.
                               </span>
                             </div>
                             <button
@@ -946,12 +1171,14 @@ export function AdminAssetsPage() {
                                 setAddStockQty(1);
                               }}
                               style={{
-                                background: "transparent",
-                                border: "none",
+                                background: "rgba(201, 163, 74, 0.12)",
+                                border: "1px solid rgba(201, 163, 74, 0.35)",
                                 color: "#C9A34A",
+                                padding: "6px 12px",
+                                borderRadius: 6,
                                 fontSize: "0.72rem",
                                 cursor: "pointer",
-                                fontWeight: 600,
+                                fontWeight: 700,
                                 display: "inline-flex",
                                 alignItems: "center",
                                 gap: 4,
@@ -961,7 +1188,7 @@ export function AdminAssetsPage() {
                             </button>
                           </div>
 
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))", gap: 10 }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 10 }}>
                             {grp.units.map((unit: Asset) => {
                               const isDryCleaning = unit.is_in_dry_cleaning;
                               const isAvail = unit.status === "available" && !isDryCleaning && unit.is_active;
@@ -971,8 +1198,8 @@ export function AdminAssetsPage() {
                                 <div
                                   key={unit.id}
                                   style={{
-                                    background: "#161616",
-                                    borderRadius: 10,
+                                    background: "#151515",
+                                    borderRadius: 8,
                                     border: "1px solid rgba(255, 255, 255, 0.08)",
                                     padding: "10px 14px",
                                     display: "flex",
@@ -995,7 +1222,7 @@ export function AdminAssetsPage() {
                                         </span>
                                       ) : isRented ? (
                                         <span style={{ fontSize: "0.66rem", color: "#facc15", fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "rgba(250, 204, 21, 0.15)" }}>
-                                          ● Rented / Allocated
+                                          ● Rented
                                         </span>
                                       ) : (
                                         <span style={{ fontSize: "0.66rem", color: "#9ca3af", fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: "rgba(156, 163, 175, 0.15)" }}>

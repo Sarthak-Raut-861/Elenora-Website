@@ -84,7 +84,7 @@ async def delete_category(
     result = await db.execute(select(Category).where(Category.id == category_id))
     category = result.scalars().first()
     if not category:
-        raise HTTPException(status_code=404, detail="Category not found")
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     # Check if assets are using this category
     asset_check = await db.execute(select(Asset).where(Asset.category_id == category_id))

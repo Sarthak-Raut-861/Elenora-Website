@@ -93,12 +93,14 @@ export function AppLayout() {
       }
     } else {
       const standard = [
-        "Haute Couture Lehengas",
-        "Bridal Gowns",
-        "Heritage Sherwanis",
-        "Royal Banarasi Sarees",
-        "Cocktail Tuxedos",
-        "Artisanal Jewellery",
+        "Casual wear",
+        "Party wear",
+        "Western outfits",
+        "Kurtis",
+        "Hijabs & Abayas",
+        "Jewellery",
+        "Bridal wear",
+        "Rental collections",
       ];
       for (const s of standard) {
         list.push({
@@ -846,10 +848,14 @@ export function AppLayout() {
 
 
 
-      {/* ── ATELIER CART DRAWER & SEARCH MODAL ── */}
-      <CartDrawer />
-      <SearchModal isOpen={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
-
+      {/* ── ATELIER CART DRAWER & SEARCH MODAL ── */}
+
+      <CartDrawer />
+
+      <SearchModal isOpen={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
+
+
+
       {/* ── FLOATING WHATSAPP BUTTON (BOTTOM RIGHT) ── */}
       <a
         href="https://wa.me/919970347554?text=Hello%20Elanora%20Boutique,%20I%20am%20interested%20in%20your%20couture%20collection."
@@ -917,7 +923,7 @@ export function AppLayout() {
                   margin: "0 0 12px",
                 }}
               >
-                YOUR STYLE, OUR PASSION
+                Where Every Woman Finds Her Perfect Elegance.
               </p>
               <p style={{ fontSize: "0.82rem", lineHeight: 1.6, color: "rgba(255,255,255,0.6)", marginBottom: 12 }}>
                 India's premier luxury couture & occasion rental atelier. Wearing perfection for your most cherished celebration.

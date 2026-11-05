@@ -573,6 +573,70 @@ export function AssetsPage() {
           })}
         </div>
 
+        {/* Empty State */}
+        {!isLoading && groupedProducts.length === 0 && (
+          <div
+            style={{
+              textAlign: "center",
+              padding: "70px 24px",
+              background: "#141414",
+              borderRadius: 16,
+              border: "1px solid rgba(255, 255, 255, 0.08)",
+              maxWidth: 580,
+              margin: "40px auto",
+              boxShadow: "0 12px 40px rgba(0,0,0,0.5)",
+            }}
+          >
+            <div
+              style={{
+                width: 52,
+                height: 52,
+                borderRadius: "50%",
+                background: "rgba(201, 163, 74, 0.12)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 16px",
+                color: "#C9A34A",
+              }}
+            >
+              <Sparkles size={26} />
+            </div>
+            <h3
+              style={{
+                fontFamily: "var(--font-brand)",
+                fontSize: "1.35rem",
+                color: "#FFFFFF",
+                marginBottom: 8,
+                letterSpacing: "0.04em",
+              }}
+            >
+              New Collections Arriving Soon
+            </h3>
+            <p
+              style={{
+                color: "var(--color-text-muted)",
+                fontSize: "0.88rem",
+                lineHeight: 1.6,
+                marginBottom: 20,
+              }}
+            >
+              {selectedCategory !== "all"
+                ? `No designs currently listed under "${selectedCategory}". Check back shortly or browse other collections.`
+                : "Our atelier is currently curating fresh couture collections. Please visit again soon."}
+            </p>
+            {selectedCategory !== "all" && (
+              <button
+                onClick={() => handleCategoryChange("all")}
+                className="btn-gold-outline"
+                style={{ padding: "8px 20px", fontSize: "0.82rem" }}
+              >
+                View All Categories
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Modal */}
         {selectedAssetForBooking && (
           <AssetBookingModal

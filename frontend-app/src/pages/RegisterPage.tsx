@@ -142,7 +142,7 @@ export function RegisterPage() {
             ELANORA BOUTIQUE
           </h1>
           <p style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--color-accent-gold)", letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 500, margin: "0 0 8px 0" }}>
-            YOUR STYLE, OUR PASSION
+            Where Every Woman Finds Her Perfect Elegance.
           </p>
           <p style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--color-text-muted)", margin: 0 }}>Create your bespoke atelier client account</p>
           <hr className="gold-divider" style={{ margin: "16px auto 0", maxWidth: 60 }} />

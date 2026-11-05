@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func
@@ -292,7 +292,7 @@ async def delete_asset(
     asset = result.scalars().first()
 
     if not asset:
-        raise HTTPException(status_code=404, detail="Asset not found")
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     # Null out bookings that reference this asset as requested_asset
     bookings_result = await db.execute(
@@ -386,7 +386,7 @@ async def delete_asset_group(
     result = await db.execute(select(Asset).where(Asset.id == asset_id))
     target = result.scalars().first()
     if not target:
-        raise HTTPException(status_code=404, detail="Asset not found")
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     group_result = await db.execute(
         select(Asset).where(

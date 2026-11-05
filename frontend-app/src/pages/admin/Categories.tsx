@@ -107,7 +107,16 @@ export function AdminCategoriesPage() {
       showToast(`Category "${deletedName}" has been removed`);
     },
     onError: (err: any) => {
-      setDeleteError(err?.message || "Failed to delete category");
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-assets"] });
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      const msg = err?.message || "";
+      if (msg.toLowerCase().includes("not found")) {
+        setDeletingCategory(null);
+        setDeleteError(null);
+      } else {
+        setDeleteError(msg || "Failed to delete category");
+      }
     },
   });
 

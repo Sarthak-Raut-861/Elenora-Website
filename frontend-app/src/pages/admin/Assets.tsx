@@ -428,6 +428,16 @@ export function AdminAssetsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-assets"] });
       queryClient.invalidateQueries({ queryKey: ["assets"] });
+      setRetiringAsset(null);
+    },
+    onError: (err: any) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-assets"] });
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      setRetiringAsset(null);
+      const msg = err?.message || "";
+      if (!msg.toLowerCase().includes("not found")) {
+        alert(msg || "Failed to retire piece");
+      }
     },
   });
 
@@ -457,7 +467,13 @@ export function AdminAssetsPage() {
       setRetiringGroup(null);
     },
     onError: (err: any) => {
-      alert(err?.message || "Failed to retire product group");
+      queryClient.invalidateQueries({ queryKey: ["admin-assets"] });
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      setRetiringGroup(null);
+      const msg = err?.message || "";
+      if (!msg.toLowerCase().includes("not found")) {
+        alert(msg || "Failed to retire product group");
+      }
     },
   });
 
@@ -480,6 +496,16 @@ export function AdminAssetsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-assets"] });
       queryClient.invalidateQueries({ queryKey: ["assets"] });
+      setRetiringAsset(null);
+    },
+    onError: (err: any) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-assets"] });
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      setRetiringAsset(null);
+      const msg = err?.message || "";
+      if (!msg.toLowerCase().includes("not found")) {
+        alert(msg || "Failed to retire unit");
+      }
     },
   });
 

@@ -478,8 +478,25 @@ export function HomePage() {
           </div>
 
           {/* 4-Column Product Grid Matching Rozina Product Cards */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 28 }}>
-            {featuredAssets.slice(0, 8).map((asset: Asset) => {
+          {featuredAssets.length === 0 ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "60px 24px",
+                background: "#141414",
+                borderRadius: 14,
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                maxWidth: 600,
+                margin: "20px auto 40px",
+              }}
+            >
+              <p style={{ color: "var(--color-text-muted)", fontSize: "0.95rem", lineHeight: 1.6, margin: 0 }}>
+                Our atelier is currently tailoring new bespoke bridal and festive collections. Explore our upcoming drops shortly.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 28 }}>
+              {featuredAssets.slice(0, 8).map((asset: Asset) => {
               const buyPrice = formatINR(asset.buy_price || 38000);
               const rentPrice = formatINR(asset.rental_price || 2899);
               const lType = asset.listing_type || "both";
@@ -649,7 +666,8 @@ export function HomePage() {
                 </motion.div>
               );
             })}
-          </div>
+            </div>
+          )}
 
           <div style={{ textAlign: "center", marginTop: 44 }}>
             <button

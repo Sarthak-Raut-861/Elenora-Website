@@ -18,7 +18,7 @@ ADMIN_PASSWORD = settings.ADMIN_PASSWORD or "AdminPassword123!"
 ADMIN_FULL_NAME = settings.ADMIN_FULL_NAME or "Elenora Concierge"
 
 
-async def seed():
+async def seed_operational_defaults():
     # Ensure all tables exist
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -39,8 +39,6 @@ async def seed():
             db.add(admin)
             await db.commit()
             print(f"[OK] Admin user created: {ADMIN_EMAIL} / {ADMIN_PASSWORD}")
-        else:
-            print("[INFO] Admin user already exists.")
 
         # 2. Dry cleaner user
         cleaner_email = "cleaner@elanora-luxury.com"
@@ -58,22 +56,97 @@ async def seed():
             await db.commit()
             print(f"[OK] Dry cleaner user created: {cleaner_email} / CleanerPass123!")
 
-        # 3. Default demo client
-        client_email = "client@example.com"
-        client_res = await db.execute(select(User).where(User.email == client_email))
-        if not client_res.scalars().first():
-            demo_client = User(
-                full_name="Aarav Sharma",
-                email=client_email,
-                password_hash=hash_password("ClientPassword123!"),
-                role=UserRole.user,
-                phone="+91 98111 22334",
-                is_active=True,
-            )
-            db.add(demo_client)
-            await db.commit()
-            print(f"[OK] Demo client created: {client_email} / ClientPassword123!")
+        # 3. Rental Plans
+        default_plans = [
+            {
+                "name": "Weekend Soirée (3 Days)",
+                "duration_days": 3,
+                "daily_rate": Decimal("2500.00"),
+                "deposit_amount": Decimal("6000.00"),
+                "daily_fine_rate": Decimal("800.00"),
+                "damage_fee": Decimal("1500.00"),
+            },
+            {
+                "name": "Festive Gala (5 Days)",
+                "duration_days": 5,
+                "daily_rate": Decimal("2200.00"),
+                "deposit_amount": Decimal("8000.00"),
+                "daily_fine_rate": Decimal("1000.00"),
+                "damage_fee": Decimal("2000.00"),
+            },
+            {
+                "name": "Grand Wedding Week (7 Days)",
+                "duration_days": 7,
+                "daily_rate": Decimal("1900.00"),
+                "deposit_amount": Decimal("10000.00"),
+                "daily_fine_rate": Decimal("1200.00"),
+                "damage_fee": Decimal("2500.00"),
+            },
+        ]
+        for p in default_plans:
+            plan_res = await db.execute(select(RentalPlan).where(RentalPlan.name == p["name"]))
+            if not plan_res.scalars().first():
+                plan = RentalPlan(
+                    name=p["name"],
+                    duration_days=p["duration_days"],
+                    daily_rate=p["daily_rate"],
+                    deposit_amount=p["deposit_amount"],
+                    daily_fine_rate=p["daily_fine_rate"],
+                    damage_fee=p["damage_fee"],
+                    is_active=True,
+                )
+                db.add(plan)
+                await db.commit()
+                print(f"[OK] Rental plan created: {p['name']}")
 
+        # 4. Dry Cleaners
+        default_cleaners = [
+            {
+                "name": "Atelier Royal Dry Care",
+                "contact_person": "Ramesh Kulkarni",
+                "phone": "+91 98450 11223",
+                "email": "concierge@atelierroyalcare.com",
+                "address": "4th Block, Koramangala, Bangalore",
+                "specializations": "Silk,Zardozi,Velvet,Bridal Tulle",
+                "turnaround_days": 2,
+                "price_per_item": Decimal("1200.00"),
+            },
+            {
+                "name": "Prestige Fabric Spa & Sterilization",
+                "contact_person": "Meera Sen",
+                "phone": "+91 98230 44556",
+                "email": "service@prestigefabricspa.com",
+                "address": "Indiranagar 100ft Road, Bangalore",
+                "specializations": "Gold Brocade,Hand Embroidery,Ozone Wash",
+                "turnaround_days": 3,
+                "price_per_item": Decimal("1500.00"),
+            },
+        ]
+        for dc in default_cleaners:
+            cleaner_res = await db.execute(select(DryCleaner).where(DryCleaner.name == dc["name"]))
+            if not cleaner_res.scalars().first():
+                cleaner = DryCleaner(
+                    name=dc["name"],
+                    contact_person=dc["contact_person"],
+                    phone=dc["phone"],
+                    email=dc["email"],
+                    address=dc["address"],
+                    specializations=dc["specializations"],
+                    turnaround_days=dc["turnaround_days"],
+                    price_per_item=dc["price_per_item"],
+                    is_active=True,
+                )
+                db.add(cleaner)
+                await db.commit()
+                print(f"[OK] Partner dry cleaner created: {dc['name']}")
+
+async def seed(sample_catalog: bool = False):
+    await seed_operational_defaults()
+    if not sample_catalog:
+        print("[INFO] Operational defaults seeded. Skipping sample catalog as requested.")
+        return
+
+    async with AsyncSessionLocal() as db:
         # 4. Categories
         default_categories = [
             "Haute Couture Lehengas",

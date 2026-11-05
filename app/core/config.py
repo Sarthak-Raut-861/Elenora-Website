@@ -25,13 +25,18 @@ class Settings:
         os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "7")
     )
 
-    # Database
-    DATABASE_URL = os.getenv("DATABASE_URL")
+    # Database (PostgreSQL Production Default with Cloud Environment Detection)
+    DATABASE_URL = (
+        os.getenv("DATABASE_URL")
+        or os.getenv("POSTGRES_URL")
+        or os.getenv("POSTGRESQL_URL")
+    )
     if not DATABASE_URL:
         if os.getenv("VERCEL"):
             DATABASE_URL = "sqlite+aiosqlite:////tmp/asset_tracking.db"
         else:
-            DATABASE_URL = "sqlite+aiosqlite:///./asset_tracking.db"
+            # Fallback for local development if PostgreSQL is not active
+            DATABASE_URL = os.getenv("DEFAULT_POSTGRES_URL", "sqlite+aiosqlite:///./asset_tracking.db")
 
     # Admin Credentials
     ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@elanora-luxury.com")

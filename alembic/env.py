@@ -21,16 +21,21 @@ target_metadata = Base.metadata
 
 def get_sync_database_url():
     """
-    Convert asyncpg URL to psycopg2 URL for Alembic
-    and fix SSL parameter for Supabase.
+    Convert database URL to synchronous psycopg2 URL for Alembic.
     """
+    raw_url = settings.DATABASE_URL or "sqlite:///./asset_tracking.db"
+    if "sqlite" in raw_url:
+        return raw_url.replace("sqlite+aiosqlite://", "sqlite://")
 
-    return (
-        settings.DATABASE_URL
-        .replace("postgresql+asyncpg", "postgresql+psycopg2")
-        .replace("ssl=require", "sslmode=require")
-        .replace("%", "%%")
-    )
+    url = raw_url
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+psycopg2://", 1)
+    elif url.startswith("postgresql+asyncpg://"):
+        url = url.replace("postgresql+asyncpg://", "postgresql+psycopg2://", 1)
+    elif url.startswith("postgresql://") and not url.startswith("postgresql+psycopg2://"):
+        url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
+
+    return url.replace("ssl=require", "sslmode=require").replace("%", "%%")
 
 
 def run_migrations_offline() -> None:

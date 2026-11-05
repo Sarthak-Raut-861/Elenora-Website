@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import datetime
 from app.models.user import UserRole
 
@@ -9,6 +9,8 @@ class UserRegister(BaseModel):
     password: str
 
 class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     full_name: str
     email: EmailStr
@@ -16,9 +18,6 @@ class UserResponse(BaseModel):
     phone: str | None = None
     is_active: bool
     created_at: datetime | None = None
-
-    class Config:
-        from_attributes = True
 
 class UserLogin(BaseModel):
     email: EmailStr

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator, field_serializer
+from pydantic import BaseModel, field_validator, field_serializer, ConfigDict
 from datetime import date, datetime
 from decimal import Decimal
 from typing import List, Optional
@@ -7,13 +7,12 @@ from app.schemas.rental_plan import RentalPlanResponse
 
 
 class UserBasicResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     full_name: str
     email: str
     phone: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 
 class BookingCreate(BaseModel):
@@ -48,7 +47,18 @@ class BookingCreate(BaseModel):
 
         return normalized
 
+class BuyOrderCreate(BaseModel):
+    asset_id: int
+    size: Optional[str] = None
+    color: Optional[str] = None
+    delivery_date: Optional[date] = None
+    shipping_address: Optional[str] = None
+    contact_phone: Optional[str] = None
+
+
 class BookingResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     user_id: int
     rental_plan_id: int
@@ -58,6 +68,7 @@ class BookingResponse(BaseModel):
     aadhaar_number: Optional[str] = None
     pan_number: Optional[str] = None
     status: BookingStatus
+    order_type: Optional[str] = "rent"
     pickup_date: date
     due_date: date
     deposit_amount: Decimal
@@ -71,8 +82,24 @@ class BookingResponse(BaseModel):
     def serialize_decimal(self, value: Decimal):
         return float(value)
 
-    class Config:
-        from_attributes = True
+    @field_serializer("aadhaar_number")
+    def mask_aadhaar(self, value: Optional[str]) -> Optional[str]:
+        if not value:
+            return None
+        clean = "".join(ch for ch in str(value) if ch.isdigit())
+        if len(clean) >= 4:
+            return f"XXXXXXXX{clean[-4:]}"
+        return "XXXXXXXX"
+
+    @field_serializer("pan_number")
+    def mask_pan(self, value: Optional[str]) -> Optional[str]:
+        if not value:
+            return None
+        clean = str(value).strip().upper()
+        if len(clean) == 10:
+            return f"{clean[:2]}XXXXXX{clean[-1]}"
+        return "XXXXXX"
+
 
 class BookingListResponse(BaseModel):
     bookings : List[BookingResponse]

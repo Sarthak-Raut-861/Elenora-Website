@@ -134,7 +134,7 @@ async def get_my_jobs(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_roles([UserRole.admin, UserRole.dry_cleaner])),
 ):
-    return await list_dry_cleaning_requests_for_cleaner(db)
+    return await list_dry_cleaning_requests_for_cleaner(db, current_user=current_user)
 
 
 @router.post("/{request_id}/start", response_model=DryCleaningRequestResponse)
@@ -143,7 +143,7 @@ async def start_cleaning(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_roles([UserRole.admin, UserRole.dry_cleaner])),
 ):
-    return await mark_in_progress(db, request_id)
+    return await mark_in_progress(db, request_id, current_user=current_user)
 
 
 class CompletePayload(BaseModel):
@@ -163,5 +163,5 @@ async def complete_cleaning(
         db, request_id,
         cleaner_notes=payload.cleaner_notes,
         actual_cost=payload.actual_cost,
-        rating=payload.rating,
+        rating=payload.rating, current_user=current_user,
     )

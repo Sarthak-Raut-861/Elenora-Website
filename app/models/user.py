@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 class UserRole(str, enum.Enum):
     admin = "admin"
+    staff = "staff"
     user = "user"
     dry_cleaner = "dry_cleaner"
 

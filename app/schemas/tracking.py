@@ -1,9 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional
 
 
 class TrackingEventResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     booking_id: int
     event_type: str
@@ -12,9 +14,6 @@ class TrackingEventResponse(BaseModel):
     created_by: Optional[int] = None
     created_by_name: Optional[str] = None  # enriched
     meta: Optional[str] = None
-
-    class Config:
-        from_attributes = True
 
 
 class TrackingPageResponse(BaseModel):

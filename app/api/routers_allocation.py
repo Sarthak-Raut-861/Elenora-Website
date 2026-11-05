@@ -21,7 +21,7 @@ router = APIRouter(prefix="/admin", tags=["Admin Allocations"])
 async def list_allocations(
     request: Request,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles([UserRole.admin]))
+    current_user: User = Depends(require_roles([UserRole.admin, UserRole.staff]))
 ):
     allocation_logger.info(f"Retrieving allocations list - Admin: {current_user.email}")
     result = await db.execute(select(Allocation).order_by(Allocation.allocated_at.desc()))
@@ -36,7 +36,7 @@ async def admin_allocate_asset(
     request: Request,
     allocation_data: AllocationCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles([UserRole.admin]))
+    current_user: User = Depends(require_roles([UserRole.admin, UserRole.staff]))
 ):
     allocation_logger.info(f"Asset allocation initiated - BookingId: {booking_id}, AssetId: {allocation_data.asset_id}, Admin: {current_user.email}")
     try:
@@ -57,7 +57,7 @@ async def admin_allocate_asset(
 async def admin_reject_booking(
     booking_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles([UserRole.admin]))
+    current_user: User = Depends(require_roles([UserRole.admin, UserRole.staff]))
 ):
     allocation_logger.info(f"Booking rejection initiated - BookingId: {booking_id}, Admin: {current_user.email}")
     try:

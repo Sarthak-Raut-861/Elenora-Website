@@ -1,4 +1,4 @@
-export type Role = 'admin' | 'user' | 'dry_cleaner'
+export type Role = 'admin' | 'staff' | 'user' | 'dry_cleaner'
 
 export interface User {
   id: number
@@ -44,6 +44,12 @@ export interface RentalPlan {
   created_at: string
 }
 
+export interface ColorVariant {
+  color: string
+  hex: string
+  image_url: string
+}
+
 export interface Asset {
   id: number
   name: string
@@ -55,6 +61,12 @@ export interface Asset {
   created_at: string
   is_active: boolean
   is_in_dry_cleaning: boolean
+  listing_type?: 'both' | 'rent' | 'buy'
+  buy_price?: number | null
+  rental_price?: number | null
+  sizes?: string | null
+  color_variants?: string | null
+  gallery_images?: string | null
 }
 
 export interface AssetCreatePayload {
@@ -63,6 +75,12 @@ export interface AssetCreatePayload {
   image_url?: string | null
   category_id: number
   quantity: number
+  listing_type?: 'both' | 'rent' | 'buy'
+  buy_price?: number | null
+  rental_price?: number | null
+  sizes?: string | null
+  color_variants?: string | null
+  gallery_images?: string | null
 }
 
 export type BookingStatus =
@@ -82,6 +100,7 @@ export interface Booking {
   user_id: number
   rental_plan_id: number
   status: BookingStatus
+  order_type?: 'rent' | 'buy'
   pickup_date: string
   due_date: string
   deposit_amount: number
@@ -199,6 +218,7 @@ export interface UserBookingHistoryItem {
   category_id: number | null
   requested_asset_id: number | null
   status: BookingStatus
+  order_type?: 'rent' | 'buy'
   pickup_date: string
   due_date: string
   deposit_amount: number
@@ -207,7 +227,7 @@ export interface UserBookingHistoryItem {
 }
 
 export type DryCleaningStatus = 'pending' | 'sent' | 'in_progress' | 'completed'
-export type DryCleaningPriority = 'low' | 'normal' | 'urgent'
+export type DryCleaningPriority = 'low' | 'normal' | 'high' | 'urgent'
 
 export interface DryCleaningAssetInfo {
   id: number
@@ -309,4 +329,14 @@ export interface RecentActivityItem {
   asset_name: string | null
   asset_image_url: string | null
   created_by_name: string | null
+}
+
+
+export interface BuyOrderPayload {
+  asset_id: number
+  size?: string
+  color?: string
+  delivery_date?: string
+  shipping_address?: string
+  contact_phone?: string
 }

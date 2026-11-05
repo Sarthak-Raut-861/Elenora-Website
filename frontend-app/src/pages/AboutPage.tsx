@@ -59,7 +59,7 @@ export function AboutPage() {
         <div style={{ maxWidth: 900, margin: "0 auto", position: "relative", zIndex: 1 }}>
           <Crown size={28} color="var(--color-accent-gold)" strokeWidth={1.5} style={{ margin: "0 auto 16px" }} />
           <p className="section-eyebrow" style={{ marginBottom: 12 }}>Our Story</p>
-          <h1 style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 52, fontWeight: 500, color: "var(--color-text-primary)", margin: "0 0 16px 0", lineHeight: 1.1 }}>About Riwaayat</h1>
+          <h1 style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 52, fontWeight: 500, color: "var(--color-text-primary)", margin: "0 0 16px 0", lineHeight: 1.1 }}>About ELENORA</h1>
           <p style={{ fontFamily: "var(--font-sans)", fontSize: 16, color: "var(--color-text-muted)", maxWidth: 520, marginInline: "auto", lineHeight: 1.7 }}>
             Building accountable and elegant asset operations for those who value heritage.
           </p>
@@ -83,9 +83,9 @@ export function AboutPage() {
           <div className="about-mission-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center" }}>
             <div style={{ borderLeft: "2px solid var(--color-accent-gold)", paddingLeft: 32 }}>
               <p className="section-eyebrow" style={{ marginBottom: 12 }}>Our Mission</p>
-              <h2 style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 36, fontWeight: 500, color: "var(--color-text-primary)", margin: "0 0 20px 0", lineHeight: 1.2 }}>Why we built Riwaayat</h2>
+              <h2 style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 36, fontWeight: 500, color: "var(--color-text-primary)", margin: "0 0 20px 0", lineHeight: 1.2 }}>Why we built ELENORA</h2>
               <p style={{ fontFamily: "var(--font-sans)", fontSize: 15, color: "var(--color-text-muted)", lineHeight: 1.8, margin: 0 }}>
-                Riwaayat empowers clients to access heritage pieces with transparency, accountability, and elegance. We believe that luxury rental shouldn't be complicated. Our platform simplifies the entire lifecycle — from discovery and booking to allocation, usage, and return.
+                ELENORA empowers clients to access heritage pieces with transparency, accountability, and elegance. We believe that luxury rental shouldn't be complicated. Our platform simplifies the entire lifecycle — from discovery and booking to allocation, usage, and return.
               </p>
               <button className="btn-ghost" style={{ marginTop: 20, padding: "0", color: "var(--color-accent-gold)", letterSpacing: "0.1em" }} onClick={() => navigate("/assets")}>
                 Explore the catalog <ArrowRight size={14} />
@@ -98,7 +98,7 @@ export function AboutPage() {
               <p style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 22, fontWeight: 500, color: "var(--color-text-primary)", lineHeight: 1.4, marginTop: 8 }}>
                 Heritage should be accessible to all who cherish it.
               </p>
-              <p style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--color-accent-gold)", marginTop: 16, letterSpacing: "0.08em" }}>— The Riwaayat Team</p>
+              <p style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--color-accent-gold)", marginTop: 16, letterSpacing: "0.08em" }}>— The ELENORA Team</p>
             </div>
           </div>
         </div>
@@ -150,7 +150,7 @@ export function AboutPage() {
           <div style={{ position: "absolute", bottom: 20, right: 20, width: 60, height: 60, borderBottom: "1px solid var(--color-border-strong)", borderRight: "1px solid var(--color-border-strong)", pointerEvents: "none" }} />
           <Crown size={24} color="var(--color-accent-gold)" strokeWidth={1.5} style={{ margin: "0 auto 16px" }} />
           <h2 style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 36, fontWeight: 500, color: "var(--color-text-primary)", margin: "0 0 12px 0" }}>Start your journey</h2>
-          <p style={{ fontFamily: "var(--font-sans)", fontSize: 15, color: "var(--color-text-muted)", marginBottom: 28, lineHeight: 1.7 }}>Join clients already using Riwaayat for elegant, accountable rentals.</p>
+          <p style={{ fontFamily: "var(--font-sans)", fontSize: 15, color: "var(--color-text-muted)", marginBottom: 28, lineHeight: 1.7 }}>Join clients already using ELENORA for elegant, accountable rentals.</p>
           <button className="btn-gold" style={{ padding: "14px 36px" }} onClick={() => navigate("/register")}>
             Create Account <ArrowRight size={14} />
           </button>

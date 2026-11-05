@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime, date
 from decimal import Decimal
 from typing import Optional, List
@@ -31,6 +31,8 @@ class DryCleanerUpdate(BaseModel):
 
 
 class DryCleanerResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     contact_person: Optional[str] = None
@@ -45,15 +47,12 @@ class DryCleanerResponse(BaseModel):
     price_per_item: Optional[float] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
-
 
 # ── Dry Cleaning Requests ────────────────────────────────────────────────────
 
 class DryCleaningRequestCreate(BaseModel):
     asset_id: int
-    booking_id: int
+    booking_id: Optional[int] = None
     dry_cleaner_name: Optional[str] = None
     dry_cleaner_id: Optional[int] = None
     notes: Optional[str] = None
@@ -76,28 +75,28 @@ class DryCleaningRequestUpdate(BaseModel):
 
 
 class AssetInfo(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     asset_code: str
     image_url: Optional[str] = None
 
-    class Config:
-        from_attributes = True
-
 
 class BookingUserInfo(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     full_name: str
     email: str
 
-    class Config:
-        from_attributes = True
-
 
 class DryCleaningRequestResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     asset_id: int
-    booking_id: int
+    booking_id: Optional[int] = None
     status: DryCleaningStatus
     priority: str = "normal"
     sent_at: Optional[datetime] = None
@@ -117,6 +116,3 @@ class DryCleaningRequestResponse(BaseModel):
     returned_by: Optional[BookingUserInfo] = None
     returned_at: Optional[str] = None
     dry_cleaner: Optional[DryCleanerResponse] = None
-
-    class Config:
-        from_attributes = True

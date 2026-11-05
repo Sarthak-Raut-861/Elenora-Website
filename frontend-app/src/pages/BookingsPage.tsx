@@ -18,6 +18,7 @@ import {
   X,
   Tag,
   MapPin,
+  ShoppingBag,
   CalendarDays,
 } from 'lucide-react'
 import { api } from '../api'
@@ -99,14 +100,23 @@ function StatCard({
 }
 
 // ── Tab Bar ───────────────────────────────────────────────────────────────────
-type Tab = 'all' | 'active' | 'upcoming' | 'past'
+type Tab = 'all' | 'active' | 'upcoming' | 'buy' | 'past'
 
-function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void }) {
+interface TabCounts {
+  all: number
+  active: number
+  upcoming: number
+  buy: number
+  past: number
+}
+
+function TabBar({ active, onChange, counts }: { active: Tab; onChange: (t: Tab) => void; counts?: TabCounts }) {
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'all', label: 'All' },
-    { id: 'active', label: 'Active' },
-    { id: 'upcoming', label: 'Upcoming' },
-    { id: 'past', label: 'Completed' },
+    { id: 'all', label: counts ? `All (${counts.all})` : 'All' },
+    { id: 'active', label: counts ? `Active Rentals (${counts.active})` : 'Active Rentals' },
+    { id: 'upcoming', label: counts ? `Upcoming Rentals (${counts.upcoming})` : 'Upcoming Rentals' },
+    { id: 'buy', label: counts ? `Bought to Own (${counts.buy})` : 'Bought to Own' },
+    { id: 'past', label: counts ? `Completed (${counts.past})` : 'Completed' },
   ]
   return (
     <div
@@ -126,8 +136,9 @@ function TabBar({ active, onChange }: { active: Tab; onChange: (t: Tab) => void 
             fontWeight: active === t.id ? 600 : 400,
             letterSpacing: '0.1em',
             textTransform: 'uppercase',
-            color: active === t.id ? 'var(--color-bg-primary)' : 'var(--color-text-muted)',
-            background: active === t.id ? 'var(--color-accent-gold)' : 'transparent',
+            color: active === t.id ? '#0B0B0B' : '#888888',
+            background: active === t.id ? '#EB89A4' : 'transparent',
+            boxShadow: active === t.id ? '0 2px 8px rgba(235, 137, 164, 0.3)' : 'none',
             border: 'none',
             cursor: 'pointer',
           }}
@@ -228,15 +239,15 @@ function Section({
 }
 
 // ── Booking Card Image ────────────────────────────────────────────────────────
-function BookingThumb({ variant }: { variant: 'active' | 'upcoming' }) {
-  const bg = variant === 'active' ? '#dcfce7' : '#dbeafe'
-  const color = variant === 'active' ? '#16a34a' : '#2563eb'
+function BookingThumb({ variant, isBuy }: { variant: 'active' | 'upcoming'; isBuy?: boolean }) {
+  const bg = isBuy ? 'rgba(201,163,74,0.18)' : variant === 'active' ? '#dcfce7' : '#dbeafe'
+  const color = isBuy ? '#C9A34A' : variant === 'active' ? '#16a34a' : '#2563eb'
   return (
     <div style={{
       width: 48, height: 48, borderRadius: '10px', flexShrink: 0,
       background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
-      <Package style={{ width: 22, height: 22, color }} />
+      {isBuy ? <ShoppingBag style={{ width: 22, height: 22, color }} /> : <Package style={{ width: 22, height: 22, color }} />}
     </div>
   )
 }
@@ -263,7 +274,8 @@ function BookingCard({
   isActionPending,
   variant = 'active',
 }: BookingCardProps) {
-  const daysLeft = variant === 'upcoming' ? daysUntil(b.pickup_date) : null
+  const isBuyOrder = b.order_type === 'buy'
+  const daysLeft = variant === 'upcoming' && !isBuyOrder ? daysUntil(b.pickup_date) : null
 
   // Status badge colours
   const statusStyle: Record<string, { bg: string; color: string; label: string }> = {
@@ -276,7 +288,14 @@ function BookingCard({
     picked_up:        { bg: '#dcfce7', color: '#16a34a', label: 'Picked Up' },
     overdue:          { bg: '#fee2e2', color: '#dc2626', label: 'Overdue' },
   }
-  const badge = statusStyle[b.status] ?? { bg: '#f3f4f6', color: '#374151', label: b.status }
+  const buyStatusBadge = isBuyOrder
+    ? b.status === 'allocated'
+      ? { bg: 'rgba(201,163,74,0.18)', color: '#C9A34A', label: '🛍️ Order Confirmed · Preparing Dispatch' }
+      : b.status === 'picked_up'
+      ? { bg: 'rgba(59,130,246,0.18)', color: '#60A5FA', label: '🚚 Dispatched · In Transit' }
+      : { bg: 'rgba(16,185,129,0.18)', color: '#34D399', label: '✨ Acquired · In Permanent Wardrobe' }
+    : null
+  const badge = buyStatusBadge ?? (statusStyle[b.status] ?? { bg: '#f3f4f6', color: '#374151', label: b.status })
 
   const daysLeftLabel = daysLeft === null ? null
     : daysLeft <= 0 ? 'Today'
@@ -297,14 +316,31 @@ function BookingCard({
     >
       {/* ── Top row ── */}
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
-        <BookingThumb variant={variant} />
+        <BookingThumb variant={variant} isBuy={isBuyOrder} />
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--color-text-primary)', margin: 0 }}>
-            {b.rental_plan?.name ?? `Plan #${b.rental_plan_id}`}
-          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <p style={{ fontSize: '15px', fontWeight: 700, color: 'var(--color-text-primary)', margin: 0 }}>
+              {b.rental_plan?.name ?? (isBuyOrder ? 'Haute Couture Acquisition' : `Plan #${b.rental_plan_id}`)}
+            </p>
+            {isBuyOrder && (
+              <span style={{
+                background: 'rgba(201,163,74,0.18)',
+                color: '#E6CA65',
+                border: '1px solid rgba(201,163,74,0.35)',
+                borderRadius: '4px',
+                padding: '2px 8px',
+                fontSize: '10px',
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+              }}>
+                Buy to Own
+              </span>
+            )}
+          </div>
           <p style={{ fontSize: '13px', color: 'var(--color-text-muted)', margin: '2px 0 0 0' }}>
-            Booking #{b.id}
+            {isBuyOrder ? `Acquisition Order #${b.id}` : `Booking #${b.id}`}
           </p>
         </div>
 
@@ -331,35 +367,109 @@ function BookingCard({
 
       {/* ── Info chips ── */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '14px' }}>
-        {[
-          { icon: Calendar, color: 'var(--color-accent-gold)', text: `${formatDate(b.pickup_date)} – ${formatDate(b.due_date)}` },
-          { icon: Clock,    color: 'var(--color-accent-gold-dim)', text: durationLabel(b.pickup_date, b.due_date) },
-          { icon: Tag,      color: 'var(--color-success)', text: b.rental_plan?.daily_rate ? `₹${b.rental_plan.daily_rate}/day` : null },
-        ].filter(c => c.text).map(({ icon: Icon, color, text }) => (
-          <div key={text} style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)',
-            borderRadius: '8px', padding: '7px 12px',
-            fontSize: '13px', color: 'var(--color-text-muted)',
-          }}>
-            <Icon style={{ width: 14, height: 14, color, flexShrink: 0 }} />
-            {text}
-          </div>
-        ))}
+        {isBuyOrder ? (
+          <>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)',
+              borderRadius: '8px', padding: '7px 12px',
+              fontSize: '13px', color: 'var(--color-text-muted)',
+            }}>
+              <Calendar style={{ width: 14, height: 14, color: 'var(--color-accent-gold)', flexShrink: 0 }} />
+              Acquired: {formatDate(b.pickup_date)}
+            </div>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              background: 'rgba(201,163,74,0.08)', border: '1px solid rgba(201,163,74,0.25)',
+              borderRadius: '8px', padding: '7px 12px',
+              fontSize: '13px', color: '#E6CA65',
+            }}>
+              <Sparkles style={{ width: 14, height: 14, color: '#C9A34A', flexShrink: 0 }} />
+              Permanent Wardrobe Piece
+            </div>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)',
+              borderRadius: '8px', padding: '7px 12px',
+              fontSize: '13px', color: '#34D399',
+            }}>
+              <CheckCircle2 style={{ width: 14, height: 14, color: '#34D399', flexShrink: 0 }} />
+              White-Glove Delivery
+            </div>
+          </>
+        ) : (
+          [
+            { icon: Calendar, color: 'var(--color-accent-gold)', text: `${formatDate(b.pickup_date)} – ${formatDate(b.due_date)}` },
+            { icon: Clock,    color: 'var(--color-accent-gold-dim)', text: durationLabel(b.pickup_date, b.due_date) },
+            { icon: Tag,      color: 'var(--color-success)', text: b.rental_plan?.daily_rate ? `₹${b.rental_plan.daily_rate}/day` : null },
+          ].filter(c => c.text).map(({ icon: Icon, color, text }) => (
+            <div key={text} style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)',
+              borderRadius: '8px', padding: '7px 12px',
+              fontSize: '13px', color: 'var(--color-text-muted)',
+            }}>
+              <Icon style={{ width: 14, height: 14, color, flexShrink: 0 }} />
+              {text}
+            </div>
+          ))
+        )}
       </div>
 
       {/* ── Cost row ── */}
       <div style={{ display: 'flex', gap: '24px', marginTop: '12px', fontSize: '13px' }}>
         <span style={{ color: 'var(--color-text-muted)' }}>
-          Rent: <strong style={{ color: 'var(--color-accent-gold)' }}>₹{b.rent_amount}</strong>
+          {isBuyOrder ? 'Purchase Price: ' : 'Rent: '}
+          <strong style={{ color: 'var(--color-accent-gold)' }}>₹{b.rent_amount}</strong>
         </span>
         <span style={{ color: 'var(--color-text-muted)' }}>
-          Deposit: <strong style={{ color: 'var(--color-text-primary)' }}>₹{b.deposit_amount}</strong>
+          Deposit: <strong style={{ color: isBuyOrder ? '#34D399' : 'var(--color-text-primary)' }}>
+            {isBuyOrder ? '₹0 (None required)' : `₹${b.deposit_amount}`}
+          </strong>
         </span>
       </div>
 
       {/* ── Action buttons ── */}
-      {(b.status === 'pending' || b.status === 'allocated' || b.status === 'picked_up' || b.status === 'return_requested' || b.status === 'overdue' || b.status === 'rent_paid') && (
+      {isBuyOrder && (
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px',
+          marginTop: '16px', paddingTop: '14px',
+          borderTop: '1px solid var(--color-border)',
+        }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
+            background: 'rgba(201,163,74,0.06)', borderRadius: 8,
+            border: '1px solid rgba(201,163,74,0.2)', flex: 1, minWidth: '240px',
+          }}>
+            <Sparkles style={{ width: 16, height: 16, color: '#C9A34A', flexShrink: 0 }} />
+            <span style={{ fontSize: '13px', color: '#E6CA65', fontWeight: 600 }}>
+              {b.status === 'allocated'
+                ? 'Acquisition Confirmed — Atelier White-Glove Dispatch Prep'
+                : b.status === 'picked_up'
+                ? 'Dispatched & Handed Over — In Transit to Your Address'
+                : 'Delivered — In Your Permanent Wardrobe'}
+            </span>
+          </div>
+          <button
+            onClick={() => onTrack(b.id)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px',
+              background: 'transparent', color: 'var(--color-accent-gold)',
+              border: '1.5px solid var(--color-accent-gold)', borderRadius: 'var(--radius-sm)',
+              padding: '9px 18px', fontSize: '0.72rem', fontWeight: 600,
+              letterSpacing: '0.1em', textTransform: 'uppercase',
+              cursor: 'pointer', transition: 'all 0.15s',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-accent-gold)'; e.currentTarget.style.color = 'var(--color-bg-primary)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-accent-gold)' }}
+          >
+            <MapPin style={{ width: 14, height: 14 }} />
+            Track Order
+          </button>
+        </div>
+      )}
+
+      {!isBuyOrder && (b.status === 'pending' || b.status === 'allocated' || b.status === 'picked_up' || b.status === 'return_requested' || b.status === 'overdue' || b.status === 'rent_paid') && (
         <div style={{
           display: 'flex', flexWrap: 'wrap', gap: '10px',
           marginTop: '16px', paddingTop: '14px',
@@ -372,13 +482,13 @@ function BookingCard({
                 disabled={isActionPending}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '7px',
-                  background: 'var(--color-accent-gold)', color: 'var(--color-bg-primary)',
+                  background: '#EB89A4', color: '#0B0B0B',
                   border: 'none', borderRadius: 'var(--radius-sm)',
-                  padding: '10px 20px', fontSize: '0.75rem', fontWeight: 600,
-                  letterSpacing: '0.1em', textTransform: 'uppercase',
+                  padding: '10px 20px', fontSize: '0.75rem', fontWeight: 700,
+                  letterSpacing: '0.08em', textTransform: 'uppercase',
                   cursor: isActionPending ? 'not-allowed' : 'pointer',
                   opacity: isActionPending ? 0.6 : 1,
-                  boxShadow: 'var(--shadow-gold)',
+                  boxShadow: '0 4px 12px rgba(235, 137, 164, 0.35)',
                   transition: 'background 0.15s, transform 0.15s',
                 }}
                 onMouseEnter={(e) => { if (!isActionPending) { e.currentTarget.style.background = 'var(--color-accent-gold-light)'; e.currentTarget.style.transform = 'translateY(-1px)' } }}
@@ -414,13 +524,13 @@ function BookingCard({
               disabled={isActionPending}
               style={{
                 display: 'flex', alignItems: 'center', gap: '7px',
-                background: 'var(--color-accent-gold)', color: 'var(--color-bg-primary)',
+                background: '#EB89A4', color: '#0B0B0B',
                 border: 'none', borderRadius: 'var(--radius-sm)',
-                padding: '10px 20px', fontSize: '0.75rem', fontWeight: 600,
-                letterSpacing: '0.1em', textTransform: 'uppercase',
+                padding: '10px 20px', fontSize: '0.75rem', fontWeight: 700,
+                letterSpacing: '0.08em', textTransform: 'uppercase',
                 cursor: isActionPending ? 'not-allowed' : 'pointer',
                 opacity: isActionPending ? 0.6 : 1,
-                boxShadow: 'var(--shadow-gold)',
+                boxShadow: '0 4px 12px rgba(235, 137, 164, 0.35)',
                 transition: 'background 0.15s, transform 0.15s',
               }}
               onMouseEnter={(e) => { if (!isActionPending) { e.currentTarget.style.background = 'var(--color-accent-gold-light)'; e.currentTarget.style.transform = 'translateY(-1px)' } }}
@@ -490,11 +600,14 @@ function BookingCard({
   )
 }
 function PastBookingRow({ booking: b, onRebook, onTrack }: { booking: Booking; onRebook: () => void; onTrack: () => void }) {
+  const isBuyOrder = b.order_type === 'buy'
   const statusBadge: Record<string, { bg: string; color: string; border: string; label: string }> = {
     returned:  { bg: 'rgba(126,200,160,0.12)', color: '#7EC8A0', border: 'rgba(126,200,160,0.3)', label: 'Returned' },
     cancelled: { bg: 'rgba(158,128,112,0.12)', color: '#9E8070',  border: 'rgba(158,128,112,0.25)', label: 'Cancelled' },
   }
-  const badge = statusBadge[b.status] ?? { bg: 'rgba(158,128,112,0.12)', color: '#9E8070', border: 'rgba(158,128,112,0.25)', label: b.status }
+  const badge = isBuyOrder
+    ? { bg: 'rgba(201,163,74,0.15)', color: '#E6CA65', border: 'rgba(201,163,74,0.3)', label: '🛍️ Acquired' }
+    : (statusBadge[b.status] ?? { bg: 'rgba(158,128,112,0.12)', color: '#9E8070', border: 'rgba(158,128,112,0.25)', label: b.status })
 
   return (
     <div
@@ -523,10 +636,12 @@ function PastBookingRow({ booking: b, onRebook, onTrack }: { booking: Booking; o
       {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--color-text-primary)', margin: 0 }}>
-          {b.rental_plan?.name ?? `Plan #${b.rental_plan_id}`}
+          {b.rental_plan?.name ?? (isBuyOrder ? 'Haute Couture Acquisition' : `Plan #${b.rental_plan_id}`)}
         </p>
         <p style={{ fontSize: '12px', color: 'var(--color-text-muted)', margin: '3px 0 0 0', letterSpacing: '0.01em' }}>
-          {formatDate(b.pickup_date)} – {formatDate(b.due_date)} · {durationLabel(b.pickup_date, b.due_date)}
+          {isBuyOrder
+            ? `Acquired on ${formatDate(b.pickup_date)} · Permanent Ownership`
+            : `${formatDate(b.pickup_date)} – ${formatDate(b.due_date)} · ${durationLabel(b.pickup_date, b.due_date)}`}
         </p>
       </div>
 
@@ -653,11 +768,21 @@ export function BookingsPage() {
     returnMutation.isPending
 
   const bookings = bookingsQuery.data ?? []
-  const activeBookings = bookings.filter((b) => ['picked_up', 'overdue', 'ready_for_pickup', 'return_requested', 'rent_paid'].includes(b.status))
-  const upcomingBookings = bookings.filter((b) =>
+  const buyBookings = bookings.filter((b) => b.order_type === 'buy')
+  const rentalBookings = bookings.filter((b) => b.order_type !== 'buy')
+  const activeBookings = rentalBookings.filter((b) => ['picked_up', 'overdue', 'ready_for_pickup', 'return_requested', 'rent_paid'].includes(b.status))
+  const upcomingBookings = rentalBookings.filter((b) =>
     ['pending', 'booked', 'allocated'].includes(b.status)
   )
-  const pastBookings = bookings.filter((b) => ['returned', 'cancelled'].includes(b.status))
+  const pastBookings = rentalBookings.filter((b) => ['returned', 'cancelled'].includes(b.status))
+
+  const tabCounts: TabCounts = {
+    all: bookings.length,
+    active: activeBookings.length,
+    upcoming: upcomingBookings.length,
+    buy: buyBookings.length,
+    past: pastBookings.length,
+  }
 
   const cardActions = {
     onPayDeposit: (id: number) => payDepositMutation.mutate(id),
@@ -670,6 +795,7 @@ export function BookingsPage() {
 
   const showActive = activeTab === 'all' || activeTab === 'active'
   const showUpcoming = activeTab === 'all' || activeTab === 'upcoming'
+  const showBuy = activeTab === 'all' || activeTab === 'buy'
   const showPast = activeTab === 'all' || activeTab === 'past'
 
   return (
@@ -711,17 +837,17 @@ export function BookingsPage() {
           </button>
         </div>
 
-        {/* ── Stats Grid — 4 equal columns ── */}
+        {/* ── Stats Grid — 5 responsive columns ── */}
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
             gap: '16px',
             marginBottom: '28px',
           }}
         >
           <StatCard
-            label="Total Bookings"
+            label="Total Records"
             value={bookings.length}
             icon={CircleDollarSign}
             iconBg="bg-blue-50 text-blue-600"
@@ -729,7 +855,7 @@ export function BookingsPage() {
             valueColor="text-blue-700"
           />
           <StatCard
-            label="Active Now"
+            label="Active Rentals"
             value={activeBookings.length}
             icon={Sparkles}
             iconBg="bg-green-50 text-green-600"
@@ -737,12 +863,20 @@ export function BookingsPage() {
             valueColor="text-green-700"
           />
           <StatCard
-            label="Upcoming"
+            label="Upcoming Rentals"
             value={upcomingBookings.length}
             icon={Clock}
             iconBg="bg-amber-50 text-amber-600"
             topBorderColor="#f59e0b"
             valueColor="text-amber-700"
+          />
+          <StatCard
+            label="Bought to Own"
+            value={buyBookings.length}
+            icon={ShoppingBag}
+            iconBg="bg-amber-50 text-amber-600"
+            topBorderColor="#C9A34A"
+            valueColor="text-amber-600"
           />
           <StatCard
             label="Completed"
@@ -806,7 +940,7 @@ export function BookingsPage() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* ── Tab bar ── */}
-            <TabBar active={activeTab} onChange={setActiveTab} />
+            <TabBar active={activeTab} onChange={setActiveTab} counts={tabCounts} />
 
             {/* ── Active Bookings ── */}
             {showActive && (
@@ -840,6 +974,25 @@ export function BookingsPage() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {upcomingBookings.map((b) => (
                       <BookingCard key={b.id} booking={b} variant="upcoming" {...cardActions} />
+                    ))}
+                  </div>
+                )}
+              </Section>
+            )}
+
+                        {/* ── Buy Once (Acquisitions) ── */}
+            {showBuy && (buyBookings.length > 0 || activeTab === 'buy') && (
+              <Section icon={ShoppingBag} title="Bought to Own (Permanent Wardrobe)" iconColor="#C9A34A" count={buyBookings.length}>
+                {buyBookings.length === 0 ? (
+                  <EmptyState
+                    icon={ShoppingBag}
+                    title="No outright purchases yet"
+                    subtitle="Pieces you choose to Buy to Own will appear here"
+                  />
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {buyBookings.map((b) => (
+                      <BookingCard key={b.id} booking={b} variant="active" {...cardActions} />
                     ))}
                   </div>
                 )}

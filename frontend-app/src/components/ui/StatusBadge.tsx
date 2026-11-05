@@ -7,8 +7,8 @@ interface StatusBadgeProps {
   className?: string;
 }
 
-// Riwaayat-themed status color map
-const riwaayatStatusColor: Record<string, React.CSSProperties> = {
+// ELENORA-themed status color map
+const elenoraStatusColor: Record<string, React.CSSProperties> = {
   pending:          { background: "rgba(201,169,110,0.12)", color: "#C9A96E", border: "1px solid rgba(201,169,110,0.3)" },
   booked:           { background: "rgba(126,200,160,0.12)", color: "#7EC8A0", border: "1px solid rgba(126,200,160,0.3)" },
   allocated:        { background: "rgba(180,140,200,0.12)", color: "#C8A0D8", border: "1px solid rgba(180,140,200,0.3)" },
@@ -25,7 +25,7 @@ const riwaayatStatusColor: Record<string, React.CSSProperties> = {
 };
 
 export function StatusBadge({ status, colorMap, className }: StatusBadgeProps) {
-  const inlineStyle = riwaayatStatusColor[status] ?? {
+  const inlineStyle = elenoraStatusColor[status] ?? {
     background: "rgba(158,128,112,0.12)",
     color: "var(--color-text-muted)",
     border: "1px solid var(--color-border)",

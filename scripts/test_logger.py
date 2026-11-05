@@ -13,11 +13,11 @@ print("TEST 1: Logs Directory Verification")
 print("=" * 60)
 
 if os.path.exists("logs"):
-    print("✓ Logs directory exists")
+    print("[OK] Logs directory exists")
     log_files = os.listdir("logs")
     print(f"  Log files: {log_files if log_files else 'None yet'}")
 else:
-    print("✗ Logs directory does not exist")
+    print("[INFO] Logs directory does not exist yet (will be created on first log)")
 
 # Test 2: Import all loggers
 print("\n" + "=" * 60)
@@ -37,9 +37,9 @@ try:
         rate_limit_logger,
         exception_logger
     )
-    print("✓ All loggers imported successfully")
+    print("[OK] All loggers imported successfully")
 except Exception as e:
-    print(f"✗ Failed to import loggers: {e}")
+    print(f"[FAIL] Failed to import loggers: {e}")
     sys.exit(1)
 
 # Test 3: Test logging functionality
@@ -58,9 +58,9 @@ try:
     return_logger.info("Test return logger - Asset return processed for booking #123")
     rate_limit_logger.warning("Test rate limit logger - Rate limit exceeded for IP 192.168.1.1")
     exception_logger.error("Test exception logger - Sample error message")
-    print("✓ All logging tests executed successfully")
+    print("[OK] All logging tests executed successfully")
 except Exception as e:
-    print(f"✗ Logging test failed: {e}")
+    print(f"[FAIL] Logging test failed: {e}")
     sys.exit(1)
 
 # Test 4: Verify log files created
@@ -75,11 +75,11 @@ if os.path.exists("logs"):
     for log_file in expected_files:
         if log_file in log_files:
             size = os.path.getsize(f"logs/{log_file}")
-            print(f"✓ {log_file} exists ({size} bytes)")
+            print(f"[OK] {log_file} exists ({size} bytes)")
         else:
-            print(f"⊘ {log_file} not created yet (normal if no logs written yet)")
+            print(f"[-] {log_file} not created yet (normal if no logs written yet)")
 else:
-    print("✗ Logs directory still does not exist")
+    print("[FAIL] Logs directory still does not exist")
 
 print("\n" + "=" * 60)
 print("LOGGING SYSTEM VERIFICATION COMPLETE")

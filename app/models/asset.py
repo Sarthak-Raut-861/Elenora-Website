@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Enum, Float, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 import enum
@@ -28,6 +28,12 @@ class Asset(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)  # added
     is_in_dry_cleaning = Column(Boolean, default=False, nullable=False)
+    listing_type = Column(String, default="both", nullable=True)
+    buy_price = Column(Float, nullable=True)
+    rental_price = Column(Float, nullable=True)
+    sizes = Column(String, default="XS,S,M,L,XL", nullable=True)
+    color_variants = Column(Text, nullable=True)
+    gallery_images = Column(Text, nullable=True, default='[]')
 
     # Relationships
     category = relationship("Category", back_populates="assets")

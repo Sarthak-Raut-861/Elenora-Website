@@ -27,29 +27,33 @@ async def create_rental_plan(
     if existing_plan:
         raise HTTPException(status_code=400, detail="Rental plan with this name already exists")
 
-
     plan = RentalPlan(
         name=data.name,
         duration_days=data.duration_days,
         daily_rate=data.daily_rate,
         deposit_amount=data.deposit_amount,
         daily_fine_rate=data.daily_fine_rate,
-        damage_fee=data.damage_fee
-
+        damage_fee=data.damage_fee,
+        is_active=True
     )
     db.add(plan)
     await db.commit()
     await db.refresh(plan)
     return plan
 
-# GET /rental-plans/ - public endpoint, returns active plans to anyone
+# GET /rental-plans/ - public endpoint, returns active plans in increasing sequence
 @router.get("/", response_model=list[RentalPlanResponse])
 @limiter.limit("30/minute")
 async def list_rental_plans(
     request: Request,
+    include_inactive: bool = False,
     db: AsyncSession = Depends(get_db)
 ):
-    result = await db.execute(select(RentalPlan).where(RentalPlan.is_active == True))
+    query = select(RentalPlan)
+    if not include_inactive:
+        query = query.where(RentalPlan.is_active == True)
+    query = query.order_by(RentalPlan.id.asc())
+    result = await db.execute(query)
     plans = result.scalars().all()
     return plans
 
@@ -71,7 +75,6 @@ async def get_rental_plan(
 
 
 # PATCH /rental-plans/{id} - admin edits a plan
-
 @router.patch("/{plan_id}", response_model=RentalPlanResponse)
 @limiter.limit("10/minute")
 async def update_rental_plan(
@@ -119,7 +122,6 @@ async def update_rental_plan(
 
 
 # DELETE /rental-plans/{id} - admin soft deletes a plan
-
 @router.delete("/{plan_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_rental_plan(
     plan_id: int,

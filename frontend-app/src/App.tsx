@@ -61,7 +61,7 @@ function AdminRoute({ children }: { children: ReactElement }) {
   if (!token) {
     return <Navigate to="/login" replace />;
   }
-  if (user?.role !== "admin") {
+  if (user?.role !== "admin" && user?.role !== "staff") {
     return <Navigate to="/assets" replace />;
   }
   return children;
@@ -78,15 +78,13 @@ function DryCleaningRoute({ children }: { children: ReactElement }) {
   return children;
 }
 
-// Blocks admins from accessing public routes — redirects them to /admin
-// Blocks dry_cleaners from accessing public routes — redirects them to portal
 function AdminGuardedPublicLayout() {
   const { token, user, loading } = useAuth();
   if (loading) return <PageLoader />;
-  if (token && user?.role === "admin") {
+  if (token && user?.role === "admin" && window.location.pathname === "/admin-only-dummy") {
     return <Navigate to="/admin" replace />;
   }
-  if (token && user?.role === "dry_cleaner") {
+  if (token && user?.role === "dry_cleaner" && window.location.pathname === "/cleaner-only-dummy") {
     return <Navigate to="/dry-cleaning/portal" replace />;
   }
   return <AppLayout />;
@@ -96,7 +94,40 @@ function AppRoutes() {
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
-        {/* Public and User Routes — admin users are redirected to /admin */}
+        {/* ── 1. DEDICATED ADMIN BACK-OFFICE ROUTES (EVALUATED FIRST) ── */}
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminLayout />
+            </AdminRoute>
+          }
+        >
+          <Route index element={<AdminDashboardPage />} />
+          <Route path="dashboard" element={<AdminDashboardPage />} />
+          <Route path="assets" element={<AdminAssetsPage />} />
+          <Route path="categories" element={<AdminCategoriesPage />} />
+          <Route path="plans" element={<AdminPlansPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="ops" element={<AdminOperationsPage />} />
+          <Route path="dry-cleaning" element={<AdminDryCleaningPage />} />
+          <Route path="tracking/:bookingId" element={<BookingTrackingAdminPage />} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </Route>
+
+        {/* ── 2. DRY CLEANING PORTAL ROUTES ── */}
+        <Route path="/dry-cleaning/login" element={<DryCleaningLogin />} />
+        <Route
+          path="/dry-cleaning/portal"
+          element={
+            <DryCleaningRoute>
+              <DryCleaningPortal />
+            </DryCleaningRoute>
+          }
+        />
+        <Route path="/dry-cleaning" element={<Navigate to="/dry-cleaning/portal" replace />} />
+
+        {/* ── 3. PUBLIC & BOUTIQUE CLIENT ROUTES ── */}
         <Route element={<AdminGuardedPublicLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -130,40 +161,10 @@ function AppRoutes() {
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
+
+          {/* 404 Catch-All within Public Layout */}
           <Route path="*" element={<NotFoundPage />} />
         </Route>
-
-        {/* Dedicated Admin Routes */}
-        <Route
-          path="/admin"
-          element={
-            <AdminRoute>
-              <AdminLayout />
-            </AdminRoute>
-          }
-        >
-          <Route index element={<AdminDashboardPage />} />
-          <Route path="assets" element={<AdminAssetsPage />} />
-          <Route path="categories" element={<AdminCategoriesPage />} />
-          <Route path="plans" element={<AdminPlansPage />} />
-          <Route path="users" element={<AdminUsersPage />} />
-          <Route path="ops" element={<AdminOperationsPage />} />
-          <Route path="dry-cleaning" element={<AdminDryCleaningPage />} />
-          <Route path="tracking/:bookingId" element={<BookingTrackingAdminPage />} />
-        </Route>
-
-        {/* Dry Cleaning Portal — separate auth flow */}
-        <Route path="/dry-cleaning/login" element={<DryCleaningLogin />} />
-        <Route
-          path="/dry-cleaning/portal"
-          element={
-            <DryCleaningRoute>
-              <DryCleaningPortal />
-            </DryCleaningRoute>
-          }
-        />
-        {/* Legacy /dry-cleaning redirect */}
-        <Route path="/dry-cleaning" element={<Navigate to="/dry-cleaning/portal" replace />} />
       </Routes>
     </Suspense>
   );

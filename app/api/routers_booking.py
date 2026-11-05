@@ -9,6 +9,7 @@ from app.core.logger import booking_logger
 from app.schemas.booking import (
     BookingResponse,
     BookingCreate,
+    BuyOrderCreate,
     BlockedDateRangesResponse,
 )
 from app.services import booking_service
@@ -54,6 +55,31 @@ async def create_booking(
         raise
 
 
+# POST /bookings/buy - direct outright purchase (Buy Once)
+@router.post("/buy", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
+async def create_buy_order(
+    request: Request,
+    data: BuyOrderCreate,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    booking_logger.info(
+        f"Direct acquisition attempt - Asset: {data.asset_id}, User: {current_user.email}"
+    )
+    try:
+        booking = await booking_service.create_buy_order(db, current_user, data)
+        booking_logger.info(
+            f"Direct acquisition confirmed - Order #{booking.id}, Asset: {data.asset_id}, User: {current_user.email}"
+        )
+        return booking
+    except Exception as e:
+        booking_logger.error(
+            f"Direct acquisition failed - Asset: {data.asset_id}, User: {current_user.email}, Error: {str(e)}"
+        )
+        raise
+
+
 # GET /bookings/ - get all bookings for current user
 @router.get("/", response_model=list[BookingResponse])
 @limiter.limit("30/minute")
@@ -80,7 +106,7 @@ async def get_user_bookings(
 @limiter.limit("30/minute")
 async def admin_get_all_bookings(
     request: Request,
-    current_user=Depends(require_roles([UserRole.admin])),
+    current_user=Depends(require_roles([UserRole.admin, UserRole.staff])),
     db: AsyncSession = Depends(get_db)
 ):
     booking_logger.info(
@@ -102,7 +128,7 @@ async def admin_get_all_bookings(
 @limiter.limit("20/minute")
 async def refresh_booking_statuses(
     request: Request,
-    current_user=Depends(require_roles([UserRole.admin])),
+    current_user=Depends(require_roles([UserRole.admin, UserRole.staff])),
     db: AsyncSession = Depends(get_db)
 ):
     booking_logger.info(
@@ -133,7 +159,7 @@ async def refresh_booking_statuses(
 async def mark_booking_picked_up(
     request: Request,
     booking_id: int,
-    current_user=Depends(require_roles([UserRole.admin])),
+    current_user=Depends(require_roles([UserRole.admin, UserRole.staff])),
     db: AsyncSession = Depends(get_db)
 ):
     """Admin marks booking as picked up by user"""

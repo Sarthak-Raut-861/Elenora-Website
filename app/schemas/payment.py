@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, field_serializer, ConfigDict
 from app.models.payment import PaymentType, PaymentStatus
 from datetime import datetime
 from decimal import Decimal
@@ -10,7 +10,7 @@ class CreateOrderResponse(BaseModel):
     order_id: str
     amount: int # amount in paise for Razorpay
     currency: str = "INR"
-    key:str
+    key: str
 
 class VerifyPaymentRequest(BaseModel):
     razorpay_order_id: str
@@ -18,18 +18,17 @@ class VerifyPaymentRequest(BaseModel):
     razorpay_signature: str
 
 class PaymentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     booking_id: int
     type: PaymentType
     amount: Decimal
     status: PaymentStatus
-    razorpay_order_id: str | None
-    razorpay_payment_id: str | None
+    razorpay_order_id: str | None = None
+    razorpay_payment_id: str | None = None
     created_at: datetime
 
     @field_serializer("amount")
     def serialize_decimal(self, value: Decimal):
         return float(value)
-
-    class Config:
-        from_attributes = True

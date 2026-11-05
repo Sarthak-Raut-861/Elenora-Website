@@ -14,6 +14,8 @@ import type {
   RegisterPayload,
   RentalPlan,
   ReturnRecord,
+  Role,
+  BuyOrderPayload,
   UserUpdatePayload,
   User,
   UserHistoryResponse,
@@ -131,12 +133,13 @@ export const api = {
     request<Asset>(`/assets/${assetId}`, { token: token || null }),
   listAssetsFiltered: (
     token: string | null,
-    params?: { name?: string; category_name?: string; status?: string },
+    params?: { name?: string; category_name?: string; status?: string; listing_type?: string },
   ) => {
     const query = new URLSearchParams()
     if (params?.name) query.set('name', params.name)
     if (params?.category_name) query.set('category_name', params.category_name)
     if (params?.status) query.set('status', params.status)
+    if (params?.listing_type) query.set('listing_type', params.listing_type)
     const q = query.toString()
     return request<Asset[]>(`/assets/${q ? `?${q}` : ''}`, { token: token || null })
   },
@@ -151,6 +154,12 @@ export const api = {
       status?: string
       is_active?: boolean
       is_in_dry_cleaning?: boolean
+      listing_type?: 'both' | 'rent' | 'buy'
+      buy_price?: number | null
+      rental_price?: number | null
+      sizes?: string | null
+      color_variants?: string | null
+      gallery_images?: string | null
     },
   ) => request<Asset>(`/assets/${assetId}`, { method: 'PATCH', token, body: payload }),
   deleteAsset: (token: string, assetId: number) =>
@@ -164,7 +173,7 @@ export const api = {
   deleteCategory: (token: string, categoryId: number) =>
     request<void>(`/categories/${categoryId}`, { method: 'DELETE', token }),
 
-  listRentalPlans: (token: string) => request<RentalPlan[]>('/rental-plans/', { token }),
+  listRentalPlans: (token?: string | null) => request<RentalPlan[]>('/rental-plans/', { token: token || null }),
   createRentalPlan: (
     token: string,
     payload: {
@@ -192,6 +201,8 @@ export const api = {
   deleteRentalPlan: (token: string, planId: number) =>
     request<void>(`/rental-plans/${planId}`, { method: 'DELETE', token }),
 
+  createBuyOrder: (token: string, payload: BuyOrderPayload) =>
+    request<Booking>('/bookings/buy', { method: 'POST', token, body: payload }),
   createBooking: (
     token: string,
     payload: {
@@ -230,7 +241,9 @@ export const api = {
   },
   updateUserById: (token: string, userId: number, payload: UserUpdatePayload) =>
     request<User>(`/users/${userId}`, { method: 'PUT', token, body: payload }),
-  setUserRole: (token: string, userId: number, role: 'admin' | 'user') =>
+  createUserByAdmin: (token: string, payload: { full_name: string; email: string; password: string; role: Role; phone?: string }) =>
+    request<User>('/users/', { method: 'POST', token, body: payload }),
+  setUserRole: (token: string, userId: number, role: 'admin' | 'staff' | 'user') =>
     request<User>(`/users/${userId}/role`, { method: 'PATCH', token, body: { role } }),
   setUserActive: (token: string, userId: number, is_active: boolean) =>
     request<User>(`/users/${userId}/activate`, { method: 'PATCH', token, body: { is_active } }),
@@ -268,6 +281,32 @@ export const api = {
   createAsset: (token: string, payload: AssetCreatePayload) =>
     request<Asset[]>('/assets/', { method: 'POST', token, body: payload }),
 
+  uploadMultipleImages: async (token: string, files: File[]): Promise<string[]> => {
+    const formData = new FormData()
+    files.forEach((file) => formData.append('files', file))
+    const res = await fetch(`${API_BASE_URL}/assets/upload-images`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    })
+    if (!res.ok) throw new Error('Failed to upload images')
+    const data = await res.json()
+    return data.image_urls || []
+  },
+
+  uploadSingleImage: async (token: string, file: File): Promise<string> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch(`${API_BASE_URL}/assets/upload-image`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    })
+    if (!res.ok) throw new Error('Failed to upload image')
+    const data = await res.json()
+    return data.image_url
+  },
+
   // Dry Cleaning
   getDryCleaningPendingSend: (token: string) =>
     request<DryCleaningRequest[]>('/dry-cleaning/pending-send', { token }),
@@ -280,7 +319,7 @@ export const api = {
   sendToDryCleaner: (
     token: string,
     payload: {
-      asset_id: number; booking_id: number
+      asset_id: number; booking_id?: number | null
       dry_cleaner_name?: string; dry_cleaner_id?: number
       notes?: string; admin_notes?: string
       priority?: string; expected_by?: string

@@ -41,7 +41,7 @@ class DryCleaningRequest(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     asset_id = Column(Integer, ForeignKey("assets.id"), nullable=False, index=True)
-    booking_id = Column(Integer, ForeignKey("bookings.id"), nullable=False, index=True)
+    booking_id = Column(Integer, ForeignKey("bookings.id"), nullable=True, index=True)
     status = Column(Enum(DryCleaningStatus), nullable=False, default=DryCleaningStatus.pending)
     priority = Column(String, nullable=False, default="normal")
     sent_at = Column(DateTime(timezone=True), nullable=True)

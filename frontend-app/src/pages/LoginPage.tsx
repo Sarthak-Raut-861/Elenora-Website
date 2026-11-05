@@ -56,7 +56,7 @@ export function LoginPage() {
     setLoading(true);
     try {
       const me = await login({ email, password });
-      navigate(me.role === "admin" ? "/admin" : "/");
+      navigate(me.role === "admin" || me.role === "staff" ? "/admin" : "/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -114,14 +114,21 @@ export function LoginPage() {
 
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <Crown size={24} color="var(--color-accent-gold)" strokeWidth={1.5} style={{ margin: "0 auto 12px" }} />
-          <h1 style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 28, fontWeight: 500, color: "var(--color-text-primary)", margin: "0 0 6px 0" }}>
-            Welcome Back
+          <img
+            src="/elanora-emblem.png"
+            alt="Elanora Monogram"
+            style={{ width: 62, height: 62, objectFit: "contain", margin: "0 auto 12px", filter: "drop-shadow(0 2px 10px rgba(201,163,74,0.35))" }}
+          />
+          <h1 className="gold-metallic-text" style={{ fontFamily: "var(--font-brand)", fontSize: 24, fontWeight: 600, letterSpacing: "0.14em", margin: "0 0 4px 0", textTransform: "uppercase" }}>
+            ELANORA BOUTIQUE
           </h1>
-          <p style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--color-text-muted)", margin: 0 }}>
-            Sign in to continue to Riwaayat
+          <p style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--color-accent-gold)", letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 500, margin: "0 0 8px 0" }}>
+            YOUR STYLE, OUR PASSION
           </p>
-          <hr className="gold-divider" style={{ margin: "20px auto 0", maxWidth: 60 }} />
+          <p style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--color-text-muted)", margin: 0 }}>
+            Sign in to continue to your boutique wardrobe
+          </p>
+          <hr className="gold-divider" style={{ margin: "16px auto 0", maxWidth: 60 }} />
         </div>
 
         {/* Error */}
@@ -197,8 +204,8 @@ export function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="btn-gold"
-            style={{ width: "100%", marginTop: 28, padding: "14px", fontSize: "0.75rem", justifyContent: "center", opacity: loading ? 0.7 : 1, cursor: loading ? "not-allowed" : "pointer" }}
+            className="btn-rose-primary"
+            style={{ width: "100%", marginTop: 28, padding: "14px", fontSize: "0.8rem", fontWeight: 700, letterSpacing: "0.08em", justifyContent: "center", opacity: loading ? 0.7 : 1, cursor: loading ? "not-allowed" : "pointer", boxShadow: "0 4px 16px rgba(201, 163, 74, 0.4)" }}
           >
             {loading && <Loader2 size={15} className="animate-spin" />}
             {loading ? "Signing in..." : "Sign In"}
@@ -207,7 +214,7 @@ export function LoginPage() {
 
         <p style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--color-text-muted)", textAlign: "center", marginTop: 24, marginBottom: 0 }}>
           Don't have an account?{" "}
-          <Link to="/register" style={{ color: "var(--color-accent-gold)", fontWeight: 600, textDecoration: "none" }}
+          <Link to="/register" style={{ color: "#C9A34A", fontWeight: 600, textDecoration: "none" }}
             onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
             onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
           >

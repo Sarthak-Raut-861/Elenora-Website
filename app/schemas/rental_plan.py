@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from decimal import Decimal
 from datetime import datetime
 
@@ -23,6 +23,8 @@ class RentalPlanUpdate(BaseModel):
 
 
 class RentalPlanResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     duration_days: int
@@ -32,6 +34,3 @@ class RentalPlanResponse(BaseModel):
     damage_fee: Decimal
     is_active: bool
     created_at: datetime
-
-    class Config:
-        from_attributes = True

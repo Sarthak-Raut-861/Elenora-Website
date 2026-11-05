@@ -1,8 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy import func
 import re
+import os
+import uuid
+import shutil
+
 from app.utils.asset_utils import generate_asset_code
 from app.core.dependencies import get_current_user, get_current_user_optional
 from app.core.rbac import require_roles
@@ -15,6 +19,63 @@ from app.models.user import User, UserRole
 from app.schemas.asset import AssetCreate, AssetUpdate, AssetResponse
 
 router = APIRouter(prefix="/assets", tags=["assets"])
+
+
+# POST /assets/upload-images - admin/staff uploads multiple image files at once
+@router.post("/upload-images")
+@limiter.limit("20/minute")
+async def upload_multiple_asset_images(
+    request: Request,
+    files: list[UploadFile] = File(...),
+    current_user: User = Depends(require_roles([UserRole.admin, UserRole.staff]))
+):
+    allowed_types = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
+    uploads_dir = os.path.join(os.getcwd(), "uploads")
+    os.makedirs(uploads_dir, exist_ok=True)
+
+    uploaded_urls = []
+    for file in files:
+        if not file.content_type or file.content_type.lower() not in allowed_types:
+            continue
+        contents = await file.read()
+        if len(contents) > 12 * 1024 * 1024:
+            continue
+        ext = allowed_types[file.content_type.lower()]
+        filename = f"{uuid.uuid4().hex}{ext}"
+        filepath = os.path.join(uploads_dir, filename)
+        with open(filepath, "wb") as buffer:
+            buffer.write(contents)
+        uploaded_urls.append(f"/uploads/{filename}")
+
+    return {"image_urls": uploaded_urls}
+
+
+# POST /assets/upload-image - admin uploads an image file
+@router.post("/upload-image")
+@limiter.limit("20/minute")
+async def upload_asset_image(
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_roles([UserRole.admin, UserRole.staff]))
+):
+    allowed_types = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
+    if not file.content_type or file.content_type.lower() not in allowed_types:
+        raise HTTPException(status_code=400, detail="Uploaded file must be a PNG, JPG, or WEBP image")
+
+    contents = await file.read()
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image file size cannot exceed 10 MB")
+
+    uploads_dir = os.path.join(os.getcwd(), "uploads")
+    os.makedirs(uploads_dir, exist_ok=True)
+    ext = allowed_types[file.content_type.lower()]
+    filename = f"{uuid.uuid4().hex}{ext}"
+    filepath = os.path.join(uploads_dir, filename)
+
+    with open(filepath, "wb") as buffer:
+        buffer.write(contents)
+
+    return {"image_url": f"/uploads/{filename}"}
 
 
 # POST /assets/ - admin creates assets (single or bulk)
@@ -54,7 +115,13 @@ async def create_asset(
             description=data.description,
             image_url=data.image_url,
             category_id=data.category_id,
-            status=AssetStatus.available
+            status=AssetStatus.available,
+            listing_type=data.listing_type or "both",
+            buy_price=data.buy_price,
+            rental_price=data.rental_price,
+            sizes=data.sizes or "XS,S,M,L,XL",
+            color_variants=data.color_variants,
+            gallery_images=data.gallery_images or "[]",
         )
         db.add(asset)
         created_assets.append(asset)
@@ -75,6 +142,7 @@ async def get_all_assets(
     name: str | None = None,
     category_name: str | None = None,
     status: AssetStatus | None = None,
+    listing_type: str | None = None,
     current_user: User | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db)
 ):
@@ -92,10 +160,15 @@ async def get_all_assets(
     if category_name is not None:
         query = query.where(Category.name.ilike(f"%{category_name}%"))
 
+    if listing_type is not None:
+        if listing_type.lower() == "rent":
+            query = query.where(Asset.listing_type.in_(["rent", "both"]))
+        elif listing_type.lower() == "buy":
+            query = query.where(Asset.listing_type.in_(["buy", "both"]))
+
     if status is not None:
         if current_user and current_user.role == UserRole.admin:
             query = query.where(Asset.status == status)
-        # users can't filter by status — they always see available only
 
     result = await db.execute(query)
     return result.scalars().all()
@@ -161,6 +234,18 @@ async def update_asset(
         asset.is_active = data.is_active
     if data.is_in_dry_cleaning is not None:
         asset.is_in_dry_cleaning = data.is_in_dry_cleaning
+    if data.listing_type is not None:
+        asset.listing_type = data.listing_type
+    if data.buy_price is not None:
+        asset.buy_price = data.buy_price
+    if data.rental_price is not None:
+        asset.rental_price = data.rental_price
+    if data.sizes is not None:
+        asset.sizes = data.sizes
+    if data.color_variants is not None:
+        asset.color_variants = data.color_variants
+    if data.gallery_images is not None:
+        asset.gallery_images = data.gallery_images
 
     db.add(asset)
     await db.commit()
@@ -199,6 +284,14 @@ async def delete_asset(
     )
     for alloc in allocs_result.scalars().all():
         await db.delete(alloc)
+
+    # Delete dry cleaning requests that reference this asset
+    from app.models.dry_cleaning import DryCleaningRequest
+    dc_result = await db.execute(
+        select(DryCleaningRequest).where(DryCleaningRequest.asset_id == asset_id)
+    )
+    for dc in dc_result.scalars().all():
+        await db.delete(dc)
 
     await db.flush()
     await db.delete(asset)

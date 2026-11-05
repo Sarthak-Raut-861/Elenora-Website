@@ -19,7 +19,7 @@ async def process_return_api(
     request: Request,
     data: ReturnCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(require_roles([UserRole.admin]))
+    current_user: User = Depends(require_roles([UserRole.admin, UserRole.staff]))
 ):
     return_logger.info(f"Asset return processing - BookingId: {booking_id}, Admin: {current_user.email}, Damage: {data.damage_amount}, DryClean: {data.send_for_dry_cleaning}")
     

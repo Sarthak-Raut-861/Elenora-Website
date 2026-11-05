@@ -39,13 +39,21 @@ class Booking(Base):
 
     deposit_amount = Column(Numeric(10, 2), nullable=False)
     rent_amount = Column(Numeric(10, 2), nullable=False)
+    order_type = Column(String(10), default="rent", nullable=False)
 
     created_at = Column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
         nullable=False
     )
-    user = relationship("User")
-    rental_plan = relationship("RentalPlan", back_populates="bookings")
-    category = relationship("Category")
-    requested_asset = relationship("Asset", foreign_keys=[requested_asset_id])
+    user = relationship("User", lazy="selectin")
+    rental_plan = relationship("RentalPlan", back_populates="bookings", lazy="selectin")
+    category = relationship("Category", lazy="selectin")
+    requested_asset = relationship("Asset", foreign_keys=[requested_asset_id], lazy="selectin")
+    allocations = relationship("Allocation", primaryjoin="Booking.id==Allocation.booking_id", lazy="selectin")
+
+    @property
+    def allocated_asset_id(self):
+        if hasattr(self, "allocations") and self.allocations:
+            return self.allocations[-1].asset_id
+        return None

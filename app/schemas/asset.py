@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from app.models.asset import AssetStatus    
 
@@ -8,6 +8,13 @@ class AssetCreate(BaseModel):
     image_url: str | None = None
     category_id: int
     quantity: int = 1
+    listing_type: str = "both"
+    buy_price: float | None = None
+    rental_price: float | None = None
+    sizes: str | None = "XS,S,M,L,XL"
+    color_variants: str | None = None
+    gallery_images: str | None = None
+    gallery_images: str | None = None
 
 class AssetUpdate(BaseModel):   
     name: str | None = None
@@ -17,8 +24,17 @@ class AssetUpdate(BaseModel):
     status: AssetStatus | None = None
     is_active: bool | None = None
     is_in_dry_cleaning: bool | None = None
+    listing_type: str | None = None
+    buy_price: float | None = None
+    rental_price: float | None = None
+    sizes: str | None = None
+    color_variants: str | None = None
+    gallery_images: str | None = None
+    gallery_images: str | None = None
 
 class AssetResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     name: str
     asset_code: str
@@ -29,6 +45,9 @@ class AssetResponse(BaseModel):
     created_at: datetime
     is_active: bool
     is_in_dry_cleaning: bool
-
-    class Config:
-        from_attributes = True
+    listing_type: str | None = "both"
+    buy_price: float | None = None
+    rental_price: float | None = None
+    sizes: str | None = "XS,S,M,L,XL"
+    color_variants: str | None = None
+    gallery_images: str | None = None

@@ -130,10 +130,19 @@ export function RegisterPage() {
 
         {/* Header */}
         <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <Crown size={24} color="var(--color-accent-gold)" strokeWidth={1.5} style={{ margin: "0 auto 12px" }} />
-          <h1 style={{ fontFamily: "var(--font-serif)", fontStyle: "italic", fontSize: 28, fontWeight: 500, color: "var(--color-text-primary)", margin: "0 0 6px 0" }}>Create Account</h1>
-          <p style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--color-text-muted)", margin: 0 }}>Join Riwaayat to start renting</p>
-          <hr className="gold-divider" style={{ margin: "20px auto 0", maxWidth: 60 }} />
+          <img
+            src="/elanora-emblem.png"
+            alt="Elanora Monogram"
+            style={{ width: 62, height: 62, objectFit: "contain", margin: "0 auto 12px", filter: "drop-shadow(0 2px 10px rgba(201,163,74,0.35))" }}
+          />
+          <h1 className="gold-metallic-text" style={{ fontFamily: "var(--font-brand)", fontSize: 24, fontWeight: 600, letterSpacing: "0.14em", margin: "0 0 4px 0", textTransform: "uppercase" }}>
+            ELANORA BOUTIQUE
+          </h1>
+          <p style={{ fontFamily: "var(--font-sans)", fontSize: 10, color: "var(--color-accent-gold)", letterSpacing: "0.22em", textTransform: "uppercase", fontWeight: 500, margin: "0 0 8px 0" }}>
+            YOUR STYLE, OUR PASSION
+          </p>
+          <p style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--color-text-muted)", margin: 0 }}>Create your bespoke atelier client account</p>
+          <hr className="gold-divider" style={{ margin: "16px auto 0", maxWidth: 60 }} />
         </div>
 
         {error && (
@@ -234,7 +243,7 @@ export function RegisterPage() {
             </div>
           </div>
 
-          <button type="submit" disabled={!canSubmit} className="btn-gold" style={{ width: "100%", marginTop: 20, padding: "14px", fontSize: "0.75rem", justifyContent: "center", opacity: canSubmit ? 1 : 0.5, cursor: canSubmit ? "pointer" : "not-allowed" }}>
+          <button type="submit" disabled={!canSubmit} className="btn-rose-primary" style={{ width: "100%", marginTop: 20, padding: "14px", fontSize: "0.8rem", fontWeight: 700, letterSpacing: "0.08em", justifyContent: "center", opacity: canSubmit ? 1 : 0.5, cursor: canSubmit ? "pointer" : "not-allowed", boxShadow: "0 4px 16px rgba(201, 163, 74, 0.4)" }}>
             {loading && <Loader2 size={15} className="animate-spin" />}
             {loading ? "Creating account…" : "Create Account"}
           </button>
@@ -242,7 +251,7 @@ export function RegisterPage() {
 
         <p style={{ fontFamily: "var(--font-sans)", fontSize: 13, color: "var(--color-text-muted)", textAlign: "center", marginTop: 20, marginBottom: 0 }}>
           Already have an account?{" "}
-          <Link to="/login" style={{ color: "var(--color-accent-gold)", fontWeight: 600, textDecoration: "none" }}
+          <Link to="/login" style={{ color: "#C9A34A", fontWeight: 600, textDecoration: "none" }}
             onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
             onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
           >

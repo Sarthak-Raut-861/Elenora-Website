@@ -30,7 +30,8 @@ const API_BASE_URL =
       (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://127.0.0.1:8000/api'
     : 'https://elenora-website.onrender.com/api'
-const TOKEN_KEY = 'asset_tracking_access_token'
+export const TOKEN_KEY = 'asset_tracking_access_token'
+export const REFRESH_KEY = 'asset_tracking_refresh_token'
 
 export function resolveMediaUrl(url: string | null | undefined): string {
   if (!url) return ''
@@ -185,7 +186,15 @@ export const api = {
   register: (payload: RegisterPayload) =>
     request<User>('/auth/register', { method: 'POST', body: payload }),
   logout: (token: string | null) => request<{ detail: string }>('/auth/logout', { method: 'POST', token }),
-  refresh: () => request<LoginResponse>('/auth/refresh', { method: 'POST' }),
+  refresh: () => {
+    const storedRefresh = localStorage.getItem('asset_tracking_refresh_token')
+    const storedToken = localStorage.getItem('asset_tracking_access_token')
+    return request<LoginResponse>('/auth/refresh', {
+      method: 'POST',
+      token: storedToken,
+      body: storedRefresh ? { refresh_token: storedRefresh } : undefined,
+    })
+  },
   me: (token: string) => request<User>('/users/me', { token }),
   updateMe: (token: string, payload: UserUpdatePayload) =>
     request<User>('/users/me', { method: 'PUT', token, body: payload }),

@@ -154,7 +154,7 @@ function PasswordInput({
 }
 
 export function ProfilePage() {
-  const { token, user, refreshToken, logout } = useAuth();
+  const { token, user, refreshUser, setUser, logout } = useAuth();
   const navigate = useNavigate();
 
   // Profile form state
@@ -219,8 +219,8 @@ export function ProfilePage() {
 
   const profileMutation = useMutation({
     mutationFn: () => api.updateMe(token!, { full_name: fullName, phone: phone || undefined }),
-    onSuccess: async () => {
-      await refreshToken();
+    onSuccess: (updatedUser) => {
+      setUser(updatedUser);
       setProfileMsg("Atelier Profile updated successfully!");
       setProfileError("");
       setTimeout(() => setProfileMsg(""), 3500);

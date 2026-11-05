@@ -128,13 +128,13 @@ async def login(
         key="refresh_token",
         value=refresh_tok,
         httponly=True,
-        samesite="lax",
-        secure=False,  # Can set True in production behind HTTPS
+        samesite="none",
+        secure=True,
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400
     )
 
     auth_logger.info(f"User logged in successfully: {user.email}")
-    return AccessTokenResponse(access_token=access_token, token_type="bearer")
+    return AccessTokenResponse(access_token=access_token, refresh_token=refresh_tok, token_type="bearer")
 
 
 @router.post("/refresh", response_model=AccessTokenResponse)
@@ -146,13 +146,36 @@ async def refresh_token_endpoint(
 ):
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
-        # Fallback to authorization header or json body if present
         try:
             body = await request.json()
             if isinstance(body, dict):
                 refresh_token = body.get("refresh_token")
         except Exception:
             refresh_token = None
+
+    if not refresh_token:
+        refresh_token = request.headers.get("x-refresh-token")
+
+    # If refresh token not explicitly provided, fallback to active Authorization header token
+    if not refresh_token:
+        auth_header = request.headers.get("authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            cur_token = auth_header.split(" ", 1)[1].strip()
+            try:
+                from app.core.security import decode_token
+                token_data = decode_token(cur_token)
+                if token_data and "sub" in token_data:
+                    u_res = await db.execute(select(User).where(User.email == token_data["sub"]))
+                    u = u_res.scalars().first()
+                    if u and u.is_active:
+                        new_acc = create_access_token({"sub": u.email, "role": u.role.value, "user_id": u.id})
+                        new_ref, new_exp = create_refresh_token({"sub": u.email, "user_id": u.id})
+                        new_rec = RefreshToken(token=new_ref, user_id=u.id, expires_at=new_exp, revoked=False)
+                        db.add(new_rec)
+                        await db.commit()
+                        return AccessTokenResponse(access_token=new_acc, refresh_token=new_ref, token_type="bearer")
+            except Exception as e:
+                auth_logger.warning(f"Bearer token refresh fallback note: {e}")
 
     if not refresh_token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token missing")
@@ -191,13 +214,13 @@ async def refresh_token_endpoint(
         key="refresh_token",
         value=new_refresh_tok,
         httponly=True,
-        samesite="lax",
-        secure=False,
+        samesite="none",
+        secure=True,
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400
     )
 
     new_access_token = create_access_token({"sub": user.email, "role": user.role.value, "user_id": user.id})
-    return AccessTokenResponse(access_token=new_access_token, token_type="bearer")
+    return AccessTokenResponse(access_token=new_access_token, refresh_token=new_refresh_tok, token_type="bearer")
 
 
 @router.post("/logout")

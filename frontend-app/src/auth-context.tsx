@@ -13,6 +13,8 @@ export interface AuthContextValue {
   login: (payload: LoginPayload) => Promise<User>
   register: (payload: RegisterPayload) => Promise<void>
   refreshToken: () => Promise<void>
+  refreshUser: () => Promise<void>
+  setUser: (user: User | null) => void
   logout: () => Promise<void>
 }
 
@@ -87,12 +89,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await api.register(payload)
       },
       refreshToken: async () => {
-        const refreshed = await api.refresh()
-        localStorage.setItem(TOKEN_KEY, refreshed.access_token)
-        setToken(refreshed.access_token)
-        const me = await api.me(refreshed.access_token)
-        setUser(me)
+        try {
+          const refreshed = await api.refresh()
+          localStorage.setItem(TOKEN_KEY, refreshed.access_token)
+          if (refreshed.refresh_token) {
+            localStorage.setItem('asset_tracking_refresh_token', refreshed.refresh_token)
+          }
+          setToken(refreshed.access_token)
+          const me = await api.me(refreshed.access_token)
+          setUser(me)
+        } catch {
+          const stored = localStorage.getItem(TOKEN_KEY)
+          if (stored) {
+            const me = await api.me(stored)
+            setUser(me)
+          }
+        }
       },
+      refreshUser: async () => {
+        const active = token || localStorage.getItem(TOKEN_KEY)
+        if (active) {
+          const me = await api.me(active)
+          setUser(me)
+        }
+      },
+      setUser,
       logout: async () => {
         if (token) {
           await api.logout(token)

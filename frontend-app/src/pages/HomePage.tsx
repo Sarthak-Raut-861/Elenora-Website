@@ -642,21 +642,21 @@ export function HomePage() {
               position: "relative",
               borderRadius: 16,
               overflow: "hidden",
-              minHeight: 420,
+              minHeight: 460,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               textAlign: "center",
               padding: "60px 24px",
-              backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.85) 100%), url('https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1920&q=85')`,
+              backgroundImage: `linear-gradient(to right, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.88) 100%), url('/royal-bridal-banner-wide.jpg')`,
               backgroundSize: "cover",
-              backgroundPosition: "center",
-              border: "1px solid rgba(201,163,74,0.3)",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.8)",
+              backgroundPosition: "center 22%",
+              border: "1px solid rgba(201,163,74,0.35)",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.85)",
               marginBottom: 44,
             }}
           >
-            <div style={{ maxWidth: 760 }}>
+            <div style={{ maxWidth: 780, background: "rgba(11,11,11,0.55)", backdropFilter: "blur(6px)", padding: "36px 30px", borderRadius: 16, border: "1px solid rgba(201,163,74,0.25)" }}>
               <span style={{ fontSize: "0.74rem", letterSpacing: "0.26em", textTransform: "uppercase", color: "#C9A34A", fontWeight: 700, display: "block", marginBottom: 12 }}>
                 CURATED ATELIER ARCHIVE
               </span>
@@ -671,17 +671,17 @@ export function HomePage() {
                   textTransform: "uppercase",
                 }}
               >
-                The Royal Ajrakh & Heritage Edit
+                The Royal Bridal Collection
               </h2>
-              <p style={{ fontSize: "1rem", color: "rgba(255,255,255,0.85)", lineHeight: 1.6, margin: "0 0 28px", maxWidth: 640, marginLeft: "auto", marginRight: "auto" }}>
-                Centuries-old artisanal block prints, mirror-embroidery and molten gold accents designed for grand wedding festivities and modern regal celebrations.
+              <p style={{ fontSize: "1.02rem", color: "rgba(255,255,255,0.9)", lineHeight: 1.65, margin: "0 0 28px", maxWidth: 640, marginLeft: "auto", marginRight: "auto" }}>
+                Handcrafted velvet lehengas, heirloom zardozi embroidery, and molten gold accents designed for grand wedding ceremonies and timeless regal bridal celebrations.
               </p>
               <button
-                onClick={() => navigate("/assets?category=Bridal+Wear")}
+                onClick={() => navigate("/assets?category=Bridal+wear")}
                 className="btn-rose-primary"
                 style={{ padding: "13px 40px", fontSize: "0.85rem", letterSpacing: "0.15em", textTransform: "uppercase" }}
               >
-                Explore The Edit →
+                Explore Bridal Collection →
               </button>
             </div>
           </div>
@@ -690,31 +690,31 @@ export function HomePage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 28 }}>
             {[
               {
-                title: "Ajrakh Choli with Mirror Embroidery & Draped Dhoti",
-                sku: "AJK-101",
-                buy: 32500,
-                rent: 2699,
-                img: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?auto=format&fit=crop&w=800&q=80",
+                title: "Burgundy Velvet Royal Palace Bridal Lehenga",
+                sku: "BRL-101",
+                buy: 58000,
+                rent: 4499,
+                img: "/royal-bridal-banner.jpg",
               },
               {
-                title: "Red Modal Satin Ajrakh Kaftan with Hand-Block Motifs",
-                sku: "AJK-102",
-                buy: 24000,
-                rent: 1999,
+                title: "The Crimson Empress Zardozi Bridal Lehenga",
+                sku: "BRL-102",
+                buy: 52000,
+                rent: 3899,
                 img: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80",
               },
               {
-                title: "Ajrakh Kaftan with Antique Gold Embroidered Borders",
-                sku: "AJK-103",
-                buy: 28500,
-                rent: 2299,
+                title: "Noor Ivory & Molten Gold Embroidered Bridal Ensemble",
+                sku: "BRL-103",
+                buy: 46500,
+                rent: 3499,
                 img: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80",
               },
               {
-                title: "Black Gold Ajrakh Kaftan with Geometric Zari Pattern",
-                sku: "AJK-104",
-                buy: 34000,
-                rent: 2799,
+                title: "Heritage Royal Rose Hand-Embroidered Bridal Set",
+                sku: "BRL-104",
+                buy: 49000,
+                rent: 3699,
                 img: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=800&q=80",
               },
             ].map((p, idx) => (

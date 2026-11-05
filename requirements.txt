@@ -25,3 +25,4 @@ email-validator
 python-multipart
 alembic
 slowapi
+aiosqlite

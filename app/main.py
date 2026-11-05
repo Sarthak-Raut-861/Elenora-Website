@@ -83,7 +83,30 @@ register_exception_handlers(app)
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-# 5. Mount API Routers
+from fastapi import APIRouter
+
+# 5. Mount API Routers under /api prefix for unified deployment routing
+api_router = APIRouter(prefix="/api")
+api_router.include_router(routers_auth.router)
+api_router.include_router(routers_users.router)
+api_router.include_router(routers_category.router)
+api_router.include_router(routers_rental_plans.router)
+api_router.include_router(routers_assets.router)
+api_router.include_router(routers_booking.router)
+api_router.include_router(routers_allocation.router)
+api_router.include_router(routers_return.router)
+api_router.include_router(routers_payment.router)
+api_router.include_router(routers_dry_cleaning.router)
+api_router.include_router(routers_tracking.router)
+api_router.include_router(routers_contact.router)
+
+@api_router.get("/health", tags=["Health"])
+async def api_health_check():
+    return {"status": "healthy"}
+
+app.include_router(api_router)
+
+# Also mount routers at root for direct and test compatibility
 app.include_router(routers_auth.router)
 app.include_router(routers_users.router)
 app.include_router(routers_category.router)

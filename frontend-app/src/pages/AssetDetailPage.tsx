@@ -1,5 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+
+import { useCart } from "../cart-context";
+
+import { formatINR } from "../utils/currency";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -24,8 +28,10 @@ import type { Asset, ColorVariant } from "../types";
 export function AssetDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { token } = useAuth();
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const { addToCart } = useCart();
 
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
@@ -107,6 +113,13 @@ export function AssetDetailPage() {
   const [activeImage, setActiveImage] = useState<string>("");
 
   // Always reset image and selection when asset changes
+  // Auto-resume rental booking modal if returning from login
+  useEffect(() => {
+    if (searchParams.get("resumeBooking") === "1" && asset) {
+      setShowBookingModal(true);
+    }
+  }, [searchParams, asset]);
+
   useEffect(() => {
     if (asset) {
       setActiveImage(asset.image_url || galleryImages[0] || "");
@@ -159,7 +172,9 @@ export function AssetDetailPage() {
 
   const isRentable = (asset.listing_type || "both") !== "buy";
   const isBuyable = (asset.listing_type || "both") !== "rent";
-  const buyPrice = asset.buy_price ? asset.buy_price.toLocaleString("en-IN") : "38,000";
+  const buyPriceNum = asset.buy_price || 38000;
+  const rentPriceNum = asset.rental_price || 2899;
+  const buyPrice = buyPriceNum.toLocaleString("en-IN");
   const rentPrice = asset.rental_price ? asset.rental_price.toLocaleString("en-IN") : "2,899";
   const isWishlisted = isInWishlist(asset.id);
 
@@ -460,7 +475,7 @@ export function AssetDetailPage() {
                     Buy Price (Own Forever)
                   </span>
                   <span style={{ fontSize: "1.35rem", fontWeight: 700, color: "#FFFFFF" }}>
-                    ₹{buyPrice}
+                    {formatINR(buyPriceNum)}
                   </span>
                 </div>
               )}
@@ -475,7 +490,7 @@ export function AssetDetailPage() {
                     Rental Price (White-Glove)
                   </span>
                   <span style={{ fontSize: "1.45rem", fontWeight: 800, color: "#C9A34A" }}>
-                    ₹{rentPrice}<span style={{ fontSize: "0.85rem", fontWeight: 500 }}>/day</span>
+                    {formatINR(rentPriceNum)}<span style={{ fontSize: "0.85rem", fontWeight: 500 }}>/day</span>
                   </span>
                 </div>
               )}
@@ -596,56 +611,106 @@ export function AssetDetailPage() {
               </div>
             )}
 
-            {/* Dual CTAs: Rent Now & Buy Now */}
-            <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
-              {isRentable && (
-                <button
-                  onClick={() => {
-                    if (!isOutOfStock) setShowBookingModal(true);
-                  }}
-                  disabled={isOutOfStock}
-                  className="btn-rose-primary"
-                  style={{
-                    flex: 1,
-                    padding: "14px 20px",
-                    fontSize: "0.9rem",
-                    fontWeight: 700,
-                    opacity: isOutOfStock ? 0.45 : 1,
-                    cursor: isOutOfStock ? "not-allowed" : "pointer",
-                  }}
-                >
-                  <Calendar size={18} /> {isOutOfStock ? "Out of Stock" : "Rent for Occasion"}
-                </button>
-              )}
+            {/* Dual CTAs & Add to Bag */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
+              <div style={{ display: "flex", gap: 12 }}>
+                {isRentable && (
+                  <button
+                    onClick={() => {
+                      if (!isOutOfStock) setShowBookingModal(true);
+                    }}
+                    disabled={isOutOfStock}
+                    className="btn-rose-primary"
+                    style={{
+                      flex: 1,
+                      padding: "14px 20px",
+                      fontSize: "0.9rem",
+                      fontWeight: 700,
+                      opacity: isOutOfStock ? 0.45 : 1,
+                      cursor: isOutOfStock ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    <Calendar size={18} /> {isOutOfStock ? "Out of Stock" : "Rent for Occasion"}
+                  </button>
+                )}
 
-              {isBuyable && (
-                <button
-                  onClick={() => {
-                    if (isOutOfStock) return;
-                    const query = new URLSearchParams({
-                      type: "buy",
-                      assetId: String(asset.id),
-                      size: selectedSize || "M",
-                    });
-                    if (selectedColor) {
-                      query.set("color", selectedColor);
-                    }
-                    navigate(`/checkout?${query.toString()}`);
-                  }}
-                  disabled={isOutOfStock}
-                  className={isRentable ? "btn-gold-outline" : "btn-rose-primary"}
-                  style={{
-                    flex: 1,
-                    padding: "14px 20px",
-                    fontSize: "0.9rem",
-                    fontWeight: 700,
-                    opacity: isOutOfStock ? 0.45 : 1,
-                    cursor: isOutOfStock ? "not-allowed" : "pointer",
-                  }}
-                >
-                  <ShoppingBag size={18} /> {isOutOfStock ? "Out of Stock" : "Buy to Own"}
-                </button>
-              )}
+                {isBuyable && (
+                  <button
+                    onClick={() => {
+                      if (isOutOfStock) return;
+                      const query = new URLSearchParams({
+                        type: "buy",
+                        assetId: String(asset.id),
+                        size: selectedSize || "M",
+                      });
+                      if (selectedColor) {
+                        query.set("color", selectedColor);
+                      }
+                      navigate(`/checkout?${query.toString()}`);
+                    }}
+                    disabled={isOutOfStock}
+                    className={isRentable ? "btn-gold-outline" : "btn-rose-primary"}
+                    style={{
+                      flex: 1,
+                      padding: "14px 20px",
+                      fontSize: "0.9rem",
+                      fontWeight: 700,
+                      opacity: isOutOfStock ? 0.45 : 1,
+                      cursor: isOutOfStock ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    <ShoppingBag size={18} /> {isOutOfStock ? "Out of Stock" : "Buy to Own"}
+                  </button>
+                )}
+              </div>
+
+              {/* Add to Shopping Bag (Guest Persistent Cart) */}
+              <button
+                onClick={() => {
+                  if (isOutOfStock) return;
+                  addToCart({
+                    asset,
+                    size: selectedSize || "M",
+                    color: selectedColor,
+                    orderType: isRentable && !isBuyable ? "rent" : "buy",
+                    price: isRentable && !isBuyable ? rentPriceNum * 3 : buyPriceNum,
+                  });
+                }}
+                disabled={isOutOfStock}
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  borderRadius: 10,
+                  background: "rgba(201, 163, 74, 0.12)",
+                  border: "1.5px solid rgba(201, 163, 74, 0.45)",
+                  color: "#C9A34A",
+                  fontSize: "0.85rem",
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  cursor: isOutOfStock ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  transition: "all 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isOutOfStock) {
+                    e.currentTarget.style.background = "rgba(201, 163, 74, 0.22)";
+                    e.currentTarget.style.borderColor = "#C9A34A";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isOutOfStock) {
+                    e.currentTarget.style.background = "rgba(201, 163, 74, 0.12)";
+                    e.currentTarget.style.borderColor = "rgba(201, 163, 74, 0.45)";
+                  }
+                }}
+              >
+                <ShoppingBag size={16} />
+                <span>Add to Shopping Bag</span>
+              </button>
             </div>
 
             {/* Service & Fitting Highlights */}

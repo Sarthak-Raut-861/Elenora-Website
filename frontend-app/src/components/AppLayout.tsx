@@ -1,11 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { NavLink, Outlet, useLocation, useNavigate, Link } from "react-router-dom";
 import {
   Menu, X, Crown, Heart, ShoppingBag, Search, ChevronDown, User, MessageCircle, LogOut, Sparkles
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../auth-context";
 import { useWishlist } from "../wishlist-context";
+import { useCart } from "../cart-context";
+import { CartDrawer } from "./CartDrawer";
+import { SearchModal } from "./SearchModal";
+import { api } from "../api";
+import type { Category } from "../types";
 
 function InstagramIcon({ size = 18, color = "currentColor" }: { size?: number; color?: string }) {
   return (
@@ -20,12 +26,20 @@ function InstagramIcon({ size = 18, color = "currentColor" }: { size?: number; c
 export function AppLayout() {
   const { user, token, logout } = useAuth();
   const { wishlistCount } = useWishlist();
+  const { cartCount, toggleCart } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [shopMenuOpen, setShopMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  const { data: rawCategories = [] } = useQuery<Category[]>({
+    queryKey: ["navbar-categories"],
+    queryFn: () => api.listCategories(token),
+  });
+  const categories = Array.isArray(rawCategories) ? rawCategories : [];
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -64,19 +78,37 @@ export function AppLayout() {
     borderTop: "none",
   });
 
-  const shopCategories = [
-    { label: "New Arrivals", to: "/assets" },
-    { label: "The Royal Bridal Edit", to: "/assets?category=Bridal+Wear" },
-    { label: "The Rental Vault (Occasion Rent)", to: "/assets?type=rent" },
-    { label: "Ready-To-Wear Boutique (Buy)", to: "/assets?type=buy" },
-    { label: "Heritage Banarasi Sarees", to: "/assets?category=Kurtis" },
-    { label: "Raw Silk Sherwanis", to: "/assets?category=Party+Wear" },
-    { label: "Chikankari Suit Sets", to: "/assets?category=Casual+Wear" },
-    { label: "Designer Gowns & Long Tail Gowns", to: "/assets?category=Party+Wear" },
-    { label: "Western Outfits & Jumpsuits", to: "/assets?category=Western+Outfits" },
-    { label: "Designer Abayas & Hijabs", to: "/assets?category=Hijabs+%26+Abayas" },
-    { label: "Artisanal Polki Jewellery", to: "/assets?category=Jewellery" },
-  ];
+  const dynamicShopCategories = useMemo(() => {
+    const list = [
+      { label: "All Creations Vault", to: "/assets" },
+      { label: "The Rental Vault (Occasion Rent)", to: "/assets?type=rent" },
+      { label: "Ready-To-Wear Boutique (Buy to Own)", to: "/assets?type=buy" },
+    ];
+    if (categories.length > 0) {
+      for (const cat of categories) {
+        list.push({
+          label: cat.name,
+          to: `/assets?category=${encodeURIComponent(cat.name)}`,
+        });
+      }
+    } else {
+      const standard = [
+        "Haute Couture Lehengas",
+        "Bridal Gowns",
+        "Heritage Sherwanis",
+        "Royal Banarasi Sarees",
+        "Cocktail Tuxedos",
+        "Artisanal Jewellery",
+      ];
+      for (const s of standard) {
+        list.push({
+          label: s,
+          to: `/assets?category=${encodeURIComponent(s)}`,
+        });
+      }
+    }
+    return list;
+  }, [categories]);
 
   return (
     <div
@@ -232,7 +264,7 @@ export function AppLayout() {
 
               {/* Search */}
               <button
-                onClick={() => navigate("/assets")}
+                onClick={() => setSearchModalOpen(true)}
                 style={{
                   background: "transparent",
                   border: "none",
@@ -532,7 +564,7 @@ export function AppLayout() {
 
               {/* Shopping Bag / Cart */}
               <button
-                onClick={() => navigate(token ? "/bookings" : "/login")}
+                onClick={() => toggleCart()}
                 style={{
                   background: "transparent",
                   border: "none",
@@ -546,9 +578,32 @@ export function AppLayout() {
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = "#FFFFFF")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255, 255, 255, 0.75)")}
-                title="Shopping Bag & Rentals"
+                title={`Shopping Bag (${cartCount})`}
               >
                 <ShoppingBag size={19} strokeWidth={1.6} />
+                {cartCount > 0 && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: -6,
+                      right: -8,
+                      minWidth: 16,
+                      height: 16,
+                      borderRadius: 9999,
+                      background: "#C9A34A",
+                      color: "#0B0B0B",
+                      fontSize: "0.62rem",
+                      fontWeight: 800,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "0 4px",
+                      boxShadow: "0 0 8px rgba(201, 163, 74, 0.6)",
+                    }}
+                  >
+                    {cartCount}
+                  </span>
+                )}
               </button>
 
               {/* Mobile Hamburger Toggle */}
@@ -611,7 +666,7 @@ export function AppLayout() {
                     </h4>
 
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px 24px" }}>
-                      {shopCategories.map((item, idx) => (
+                      {dynamicShopCategories.map((item, idx) => (
                         <Link
                           key={idx}
                           to={item.to}
@@ -791,6 +846,10 @@ export function AppLayout() {
 
 
 
+      {/* ── ATELIER CART DRAWER & SEARCH MODAL ── */}
+      <CartDrawer />
+      <SearchModal isOpen={searchModalOpen} onClose={() => setSearchModalOpen(false)} />
+
       {/* ── FLOATING WHATSAPP BUTTON (BOTTOM RIGHT) ── */}
       <a
         href="https://wa.me/919970347554?text=Hello%20Elanora%20Boutique,%20I%20am%20interested%20in%20your%20couture%20collection."

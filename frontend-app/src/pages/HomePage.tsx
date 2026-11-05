@@ -25,6 +25,7 @@ import { useWishlist } from "../wishlist-context";
 import { AssetBookingModal } from "../components/AssetBookingModal";
 import { BoutiqueAddressShowcase } from "../components/BoutiqueAddressShowcase";
 import type { Asset } from "../types";
+import { formatINR } from "../utils/currency";
 
 // ── Hero Slides (Matching Rozina Editorial Standard) ──
 const HERO_SLIDES = [
@@ -108,7 +109,7 @@ const SHOP_THE_LOOK_ITEMS = [
     sku: "ANK-9201",
     rentalPrice: 2899,
     buyPrice: 34500,
-    image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=700&q=80",
+    image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=700&q=80",
     desc: "Crushed silk flared anarkali paired with an artisanal hand-embroidered koti featuring gold gota patti and emerald beads.",
   },
   {
@@ -137,29 +138,29 @@ const EDITORIAL_COLLECTIONS = [
     name: "Haute Couture Lehengas",
     subtitle: "Bridal & Sangeet Masterpieces",
     count: "50+ Vault Items",
-    image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=900&q=80",
-    to: "/assets?category=Bridal+Wear",
+    image: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=900&q=80",
+    to: "/assets?category=Haute+Couture+Lehengas",
   },
   {
     name: "Saris & Draped Sets",
     subtitle: "Banarasi, Chiffon & Pre-Stitched",
     count: "35+ Vault Items",
     image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=900&q=80",
-    to: "/assets?category=Kurtis",
+    to: "/assets?category=Royal+Banarasi+Sarees",
   },
   {
-    name: "Designer Gowns & Jackets",
+    name: "Designer Gowns & Long Tails",
     subtitle: "Red Carpet & Cocktail Statements",
     count: "28+ Vault Items",
     image: "https://images.unsplash.com/photo-1594552072238-b8a33785b261?auto=format&fit=crop&w=900&q=80",
-    to: "/assets?category=Party+Wear",
+    to: "/assets?category=Bridal+Gowns",
   },
   {
-    name: "Artisanal Kaftans & Kurtas",
-    subtitle: "Chikankari & Signature Prints",
+    name: "Heritage Sherwanis & Kurtas",
+    subtitle: "Regal Raw Silk & Signature Zardozi",
     count: "40+ Vault Items",
-    image: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=900&q=80",
-    to: "/assets?category=Casual+Wear",
+    image: "https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=900&q=80",
+    to: "/assets?category=Heritage+Sherwanis",
   },
 ];
 
@@ -479,8 +480,8 @@ export function HomePage() {
           {/* 4-Column Product Grid Matching Rozina Product Cards */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 28 }}>
             {featuredAssets.slice(0, 8).map((asset: Asset) => {
-              const buyPrice = asset.buy_price ? asset.buy_price.toLocaleString("en-IN") : "32,000";
-              const rentPrice = asset.rental_price ? asset.rental_price.toLocaleString("en-IN") : "2,499";
+              const buyPrice = formatINR(asset.buy_price || 38000);
+              const rentPrice = formatINR(asset.rental_price || 2899);
               const lType = asset.listing_type || "both";
 
               return (
@@ -608,7 +609,7 @@ export function HomePage() {
                           <div>
                             <span style={{ fontSize: "0.66rem", color: "#888", display: "block" }}>Buy to Own</span>
                             <span style={{ fontSize: "0.95rem", fontWeight: 700, color: "#FFFFFF" }}>
-                              Rs. {buyPrice}
+                              {buyPrice}
                             </span>
                           </div>
                         )}
@@ -617,7 +618,7 @@ export function HomePage() {
                           <div style={{ textAlign: lType === "both" ? "right" : "left" }}>
                             <span style={{ fontSize: "0.66rem", color: "#888", display: "block" }}>Rental Rate</span>
                             <span style={{ fontSize: "1.05rem", fontWeight: 800, color: "#C9A34A" }}>
-                              Rs. {rentPrice}<span style={{ fontSize: "0.72rem", fontWeight: 500 }}>/day</span>
+                              {rentPrice}<span style={{ fontSize: "0.72rem", fontWeight: 500 }}>/day</span>
                             </span>
                           </div>
                         )}
@@ -706,7 +707,7 @@ export function HomePage() {
                   boxShadow: "0 14px 40px rgba(0,0,0,0.8)",
                   cursor: "pointer",
                 }}
-                onClick={() => navigate("/assets")}
+                onClick={() => navigate(`/assets?search=${encodeURIComponent(celeb.outfit)}`)}
               >
                 <img
                   src={celeb.image}
@@ -740,7 +741,7 @@ export function HomePage() {
 
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.15)" }}>
                     <span style={{ fontSize: "0.78rem", color: "#C9A34A", fontWeight: 700 }}>
-                      Rent ₹{celeb.rentalPrice}/day
+                      Rent {formatINR(celeb.rentalPrice)}/day
                     </span>
                     <span style={{ fontSize: "0.68rem", color: "#FFFFFF", background: "rgba(255,255,255,0.15)", padding: "3px 8px", borderRadius: 4, letterSpacing: "0.08em" }}>
                       Shop Look →
@@ -813,29 +814,29 @@ export function HomePage() {
               {
                 title: "Ajrakh Choli with Mirror Embroidery & Draped Dhoti",
                 sku: "AJK-101",
-                buy: "32,500",
-                rent: "2,699",
-                img: "https://images.unsplash.com/photo-1594552072238-b8a33785b261?auto=format&fit=crop&w=800&q=80",
+                buy: 32500,
+                rent: 2699,
+                img: "https://images.unsplash.com/photo-1605296867304-46d5465a13f1?auto=format&fit=crop&w=800&q=80",
               },
               {
                 title: "Red Modal Satin Ajrakh Kaftan with Hand-Block Motifs",
                 sku: "AJK-102",
-                buy: "24,000",
-                rent: "1,999",
+                buy: 24000,
+                rent: 1999,
                 img: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80",
               },
               {
                 title: "Ajrakh Kaftan with Antique Gold Embroidered Borders",
                 sku: "AJK-103",
-                buy: "28,500",
-                rent: "2,299",
+                buy: 28500,
+                rent: 2299,
                 img: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80",
               },
               {
                 title: "Black Gold Ajrakh Kaftan with Geometric Zari Pattern",
                 sku: "AJK-104",
-                buy: "34,000",
-                rent: "2,799",
+                buy: 34000,
+                rent: 2799,
                 img: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=800&q=80",
               },
             ].map((p, idx) => (
@@ -850,7 +851,7 @@ export function HomePage() {
                   flexDirection: "column",
                 }}
               >
-                <div style={{ aspectRatio: "3 / 4", overflow: "hidden", cursor: "pointer" }} onClick={() => navigate("/assets")}>
+                <div style={{ aspectRatio: "3 / 4", overflow: "hidden", cursor: "pointer" }} onClick={() => navigate(`/assets?search=${encodeURIComponent(p.title)}`)}>
                   <img src={p.img} alt={p.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
                 <div style={{ padding: "16px 14px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
@@ -860,10 +861,10 @@ export function HomePage() {
                   </div>
                   <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <span style={{ fontSize: "0.64rem", color: "#888", display: "block" }}>Buy: Rs. {p.buy}</span>
-                      <span style={{ fontSize: "0.95rem", color: "#C9A34A", fontWeight: 800 }}>Rent: Rs. {p.rent}/day</span>
+                      <span style={{ fontSize: "0.64rem", color: "#888", display: "block" }}>Buy: {formatINR(p.buy)}</span>
+                      <span style={{ fontSize: "0.95rem", color: "#C9A34A", fontWeight: 800 }}>Rent: {formatINR(p.rent)}/day</span>
                     </div>
-                    <button onClick={() => navigate("/assets")} className="btn-gold-outline" style={{ padding: "6px 14px", fontSize: "0.72rem" }}>
+                    <button onClick={() => navigate(`/assets?search=${encodeURIComponent(p.title)}`)} className="btn-gold-outline" style={{ padding: "6px 14px", fontSize: "0.72rem" }}>
                       Reserve
                     </button>
                   </div>
@@ -939,10 +940,10 @@ export function HomePage() {
                 </h3>
                 <div style={{ display: "flex", gap: 16, alignItems: "baseline" }}>
                   <span style={{ fontSize: "1.15rem", fontWeight: 800, color: "#C9A34A" }}>
-                    Rental: Rs. {activeLook.rentalPrice.toLocaleString("en-IN")}/day
+                    Rental: {formatINR(activeLook.rentalPrice)}/day
                   </span>
                   <span style={{ fontSize: "0.85rem", color: "#A3A3A3" }}>
-                    Buy: Rs. {activeLook.buyPrice.toLocaleString("en-IN")}
+                    Buy: {formatINR(activeLook.buyPrice)}
                   </span>
                 </div>
               </div>
@@ -994,12 +995,12 @@ export function HomePage() {
 
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
                         <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#C9A34A" }}>
-                          Rent ₹{item.rentalPrice}/day
+                          Rent {formatINR(item.rentalPrice)}/day
                         </span>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate("/assets");
+                            navigate(`/assets?search=${encodeURIComponent(item.title)}`);
                           }}
                           className="btn-rose-primary"
                           style={{ padding: "6px 14px", fontSize: "0.72rem" }}
@@ -1063,29 +1064,29 @@ export function HomePage() {
               {
                 title: "Peach Net Jacket with Zari Sequin Embroidery & Skirt",
                 sku: "JKT-420",
-                buy: "34,500",
-                rent: "2,499",
-                img: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80",
+                buy: 34500,
+                rent: 2499,
+                img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80",
               },
               {
                 title: "Grey Sequin Jacket with Tasseled Lace & Printed Palazzo",
                 sku: "PAL-881",
-                buy: "28,000",
-                rent: "2,199",
-                img: "https://images.unsplash.com/photo-1594552072238-b8a33785b261?auto=format&fit=crop&w=800&q=80",
+                buy: 28000,
+                rent: 2199,
+                img: "https://images.unsplash.com/photo-1566174053879-31528523f8ae?auto=format&fit=crop&w=800&q=80",
               },
               {
                 title: "Beige Net Sari with Appliqué Border & Resham Blouse",
                 sku: "SRI-290",
-                buy: "32,000",
-                rent: "2,399",
+                buy: 32000,
+                rent: 2399,
                 img: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80",
               },
               {
                 title: "Shimmer Draped Sari with Hand-Embroidered Beaded Blouse",
                 sku: "SHM-602",
-                buy: "38,500",
-                rent: "2,899",
+                buy: 38500,
+                rent: 2899,
                 img: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=800&q=80",
               },
             ].map((item, idx) => (
@@ -1100,7 +1101,7 @@ export function HomePage() {
                   flexDirection: "column",
                 }}
               >
-                <div style={{ aspectRatio: "3 / 4", overflow: "hidden", cursor: "pointer" }} onClick={() => navigate("/assets")}>
+                <div style={{ aspectRatio: "3 / 4", overflow: "hidden", cursor: "pointer" }} onClick={() => navigate(`/assets?search=${encodeURIComponent(item.title)}`)}>
                   <img src={item.img} alt={item.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 </div>
                 <div style={{ padding: "16px 14px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
@@ -1110,10 +1111,10 @@ export function HomePage() {
                   </div>
                   <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <span style={{ fontSize: "0.64rem", color: "#888", display: "block" }}>Buy: Rs. {item.buy}</span>
-                      <span style={{ fontSize: "0.95rem", color: "#C9A34A", fontWeight: 800 }}>Rent: Rs. {item.rent}/day</span>
+                      <span style={{ fontSize: "0.64rem", color: "#888", display: "block" }}>Buy: {formatINR(item.buy)}</span>
+                      <span style={{ fontSize: "0.95rem", color: "#C9A34A", fontWeight: 800 }}>Rent: {formatINR(item.rent)}/day</span>
                     </div>
-                    <button onClick={() => navigate("/assets")} className="btn-rose-primary" style={{ padding: "6px 14px", fontSize: "0.72rem" }}>
+                    <button onClick={() => navigate(`/assets?search=${encodeURIComponent(item.title)}`)} className="btn-rose-primary" style={{ padding: "6px 14px", fontSize: "0.72rem" }}>
                       Rent Now
                     </button>
                   </div>

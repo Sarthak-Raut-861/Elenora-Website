@@ -1,7 +1,8 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Suspense, lazy, type ReactElement } from "react";
 import { AuthProvider, useAuth } from "./auth-context";
-import { WishlistProvider } from "./wishlist-context";
+import { WishlistProvider } from "./wishlist-context";
+import { CartProvider } from "./cart-context";
 import { AppLayout } from "./components/AppLayout";
 import { AdminLayout } from "./layouts/AdminLayout";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -12,7 +13,8 @@ const LoginPage = lazy(() => import("./pages/LoginPage").then((m) => ({ default:
 const RegisterPage = lazy(() => import("./pages/RegisterPage").then((m) => ({ default: m.RegisterPage })));
 const AssetsPage = lazy(() => import("./pages/AssetsPage").then((m) => ({ default: m.AssetsPage })));
 const AssetDetailPage = lazy(() => import("./pages/AssetDetailPage").then((m) => ({ default: m.AssetDetailPage })));
-const WishlistPage = lazy(() => import("./pages/WishlistPage").then((m) => ({ default: m.WishlistPage })));
+const WishlistPage = lazy(() => import("./pages/WishlistPage").then((m) => ({ default: m.WishlistPage })));
+const CartPage = lazy(() => import("./pages/CartPage").then((m) => ({ default: m.CartPage })));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage").then((m) => ({ default: m.CheckoutPage })));
 const BookingsPage = lazy(() => import("./pages/BookingsPage").then((m) => ({ default: m.BookingsPage })));
 const ProfilePage = lazy(() => import("./pages/ProfilePage").then((m) => ({ default: m.ProfilePage })));
@@ -137,7 +139,8 @@ function AppRoutes() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/assets" element={<AssetsPage />} />
           <Route path="/assets/:id" element={<AssetDetailPage />} />
-          <Route path="/wishlist" element={<WishlistPage />} />
+          <Route path="/wishlist" element={<WishlistPage />} />
+          <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route
             path="/bookings"
@@ -180,7 +183,9 @@ function App() {
     <ErrorBoundary>
       <AuthProvider>
         <WishlistProvider>
-          <AppRoutes />
+          <CartProvider>
+            <AppRoutes />
+          </CartProvider>
         </WishlistProvider>
       </AuthProvider>
     </ErrorBoundary>

@@ -22,6 +22,7 @@ import { useAuth } from "../auth-context";
 import { useWishlist } from "../wishlist-context";
 import { AssetBookingModal } from "../components/AssetBookingModal";
 import type { Asset, Category } from "../types";
+import { formatINR } from "../utils/currency";
 
 export function AssetsPage() {
   const navigate = useNavigate();
@@ -86,11 +87,19 @@ export function AssetsPage() {
 
     let matchesCategory = true;
     if (selectedCategory !== "all") {
-      const catObj = categories.find((c) => c.name.toLowerCase() === selectedCategory.toLowerCase());
+      const target = selectedCategory.toLowerCase().trim();
+      const catObj = categories.find(
+        (c) =>
+          c.name.toLowerCase().trim() === target ||
+          c.name.toLowerCase().includes(target) ||
+          target.includes(c.name.toLowerCase().trim())
+      );
       if (catObj) {
         matchesCategory = asset.category_id === catObj.id;
       } else {
-        matchesCategory = asset.name.toLowerCase().includes(selectedCategory.toLowerCase());
+        matchesCategory =
+          asset.name.toLowerCase().includes(target) ||
+          (asset.description || "").toLowerCase().includes(target);
       }
     }
 
@@ -340,8 +349,8 @@ export function AssetsPage() {
             const asset = prod.primaryAsset;
             const isRentable = (asset.listing_type || "both") !== "buy";
             const isBuyable = (asset.listing_type || "both") !== "rent";
-            const buyPrice = asset.buy_price ? asset.buy_price.toLocaleString("en-IN") : "8,999";
-            const rentPrice = asset.rental_price ? asset.rental_price.toLocaleString("en-IN") : "2,499";
+            const buyPrice = formatINR(asset.buy_price || 38000);
+            const rentPrice = formatINR(asset.rental_price || 2899);
             const isOutOfStock = prod.availableStock === 0;
             const targetUnitForBooking = prod.availableUnits[0] || asset;
 
@@ -493,7 +502,7 @@ export function AssetsPage() {
                             Buy Price
                           </span>
                           <span style={{ fontSize: "0.95rem", fontWeight: 700, color: "#FFFFFF" }}>
-                            ₹{buyPrice}
+                            {buyPrice}
                           </span>
                         </div>
                       )}
@@ -508,7 +517,7 @@ export function AssetsPage() {
                             Rental Price
                           </span>
                           <span style={{ fontSize: "1.05rem", fontWeight: 800, color: "#C9A34A" }}>
-                            ₹{rentPrice}<span style={{ fontSize: "0.75rem", fontWeight: 500 }}>/day</span>
+                            {rentPrice}<span style={{ fontSize: "0.75rem", fontWeight: 500 }}>/day</span>
                           </span>
                         </div>
                       )}

@@ -23,6 +23,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../api";
 import { useAuth } from "../auth-context";
 import type { Asset, Booking } from "../types";
+import { useCart } from "../cart-context";
+import { formatINR } from "../utils/currency";
 
 // Razorpay checkout script loader helper
 function loadRazorpayScript(): Promise<boolean> {
@@ -43,8 +45,11 @@ export function CheckoutPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, token } = useAuth();
+  const { cartItems, cartTotal, clearCart } = useCart();
 
-  const assetId = Number(searchParams.get("assetId"));
+  const fromCart = searchParams.get("fromCart") === "true";
+  const rawAssetId = searchParams.get("assetId");
+  const assetId = rawAssetId ? Number(rawAssetId) : null;
   const selectedSize = searchParams.get("size") || "M";
   const selectedColor = searchParams.get("color") || "";
 
@@ -71,8 +76,8 @@ export function CheckoutPage() {
   // Query Asset Details
   const { data: asset, isLoading, error } = useQuery<Asset>({
     queryKey: ["asset-checkout", assetId],
-    queryFn: () => api.getAsset(token, assetId),
-    enabled: Boolean(assetId),
+    queryFn: () => api.getAsset(token, assetId as number),
+    enabled: Boolean(assetId && assetId > 0),
   });
 
   const fullShippingAddress = [
@@ -89,13 +94,16 @@ export function CheckoutPage() {
   const buyMutation = useMutation({
     mutationFn: (_payRef?: string | void) =>
       api.createBuyOrder(token!, {
-        asset_id: assetId,
+        asset_id: (assetId || (cartItems[0]?.asset?.id ?? 1)) as number,
         size: selectedSize,
         color: selectedColor || undefined,
         shipping_address: fullShippingAddress,
         contact_phone: phone.trim(),
       }),
     onSuccess: (order: Booking) => {
+      if (fromCart || (!assetId && cartItems.length > 0)) {
+        clearCart();
+      }
       setConfirmedOrder(order);
     },
     onError: (err: any) => {
@@ -127,7 +135,7 @@ export function CheckoutPage() {
       return;
     }
 
-    const price = asset?.buy_price || 38000;
+    const price = asset ? (asset.buy_price || 38000) : cartTotal;
 
     if (paymentMethod === "razorpay") {
       // 1. Load Razorpay SDK
@@ -177,11 +185,11 @@ export function CheckoutPage() {
     }
   };
 
-  if (!assetId) {
+  if (!assetId && cartItems.length === 0) {
     return (
       <div style={{ background: "#0B0B0B", minHeight: "85vh", padding: "80px 20px", textAlign: "center", color: "#FFFFFF" }}>
-        <h2 style={{ fontFamily: "var(--font-brand)", fontSize: "1.6rem", marginBottom: 12 }}>No Garment Selected for Checkout</h2>
-        <p style={{ color: "rgba(255,255,255,0.6)", marginBottom: 24 }}>Please select a bespoke couture piece from the collection vault.</p>
+        <h2 style={{ fontFamily: "var(--font-brand)", fontSize: "1.6rem", marginBottom: 12 }}>Your Shopping Bag is Empty</h2>
+        <p style={{ color: "rgba(255,255,255,0.6)", marginBottom: 24 }}>Please select a bespoke couture piece from our collection vault.</p>
         <button onClick={() => navigate("/assets")} className="btn-rose-primary">
           Explore Collection Vault
         </button>
@@ -189,7 +197,7 @@ export function CheckoutPage() {
     );
   }
 
-  if (isLoading) {
+  if (assetId && isLoading) {
     return (
       <div style={{ background: "#0B0B0B", minHeight: "85vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
         <div style={{ width: 44, height: 44, borderRadius: "50%", border: "2px solid rgba(201, 163, 74, 0.2)", borderTopColor: "#C9A34A", animation: "spin 0.8s linear infinite" }} />
@@ -221,7 +229,7 @@ export function CheckoutPage() {
         
         {/* Navigation Breadcrumb */}
         <button
-          onClick={() => navigate(`/assets/${asset.id}`)}
+          onClick={() => (asset ? navigate(`/assets/${asset.id}`) : navigate("/cart"))}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -235,7 +243,7 @@ export function CheckoutPage() {
             marginBottom: 28,
           }}
         >
-          <ArrowLeft size={16} /> Return to {asset.name}
+          <ArrowLeft size={16} /> {asset ? `Return to ${asset.name}` : "Return to Shopping Bag"}
         </button>
 
         {/* Page Header */}
@@ -676,7 +684,7 @@ export function CheckoutPage() {
               ) : (
                 <>
                   <Lock size={18} />
-                  <span>Confirm Acquisition · Pay ₹{buyPriceFormatted}</span>
+                  <span>Confirm Acquisition · Pay {formatINR(buyPriceNum)}</span>
                 </>
               )}
             </button>
@@ -731,7 +739,7 @@ export function CheckoutPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: 10, fontSize: "0.85rem", color: "rgba(255,255,255,0.7)", marginBottom: 16 }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span>Haute Couture Acquisition:</span>
-                  <span style={{ color: "#FFFFFF", fontWeight: 600 }}>₹{buyPriceFormatted}</span>
+                  <span style={{ color: "#FFFFFF", fontWeight: 600 }}>{formatINR(buyPriceNum)}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span>White-Glove Pan-India Delivery:</span>
@@ -766,7 +774,7 @@ export function CheckoutPage() {
                   </span>
                 </div>
                 <div style={{ fontSize: "1.45rem", fontWeight: 800, color: "#C9A34A" }}>
-                  ₹{buyPriceFormatted}
+                  {formatINR(buyPriceNum)}
                 </div>
               </div>
 

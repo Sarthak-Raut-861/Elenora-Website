@@ -185,9 +185,13 @@ async def seed():
                 "name": "The Crimson Empress Zardozi Lehenga",
                 "asset_code": "CRIMSON-EMP-001",
                 "description": "Handcrafted silk velvet lehenga with antique gold zardozi and semi-precious stone embellishments.",
-                "image_url": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80",
+                "image_url": "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=800&q=80",
                 "category_id": cat_map.get("Haute Couture Lehengas", 1),
                 "status": AssetStatus.available,
+                "buy_price": 38000.0,
+                "rental_price": 2899.0,
+                "listing_type": "both",
+                "sizes": "XS,S,M,L,XL",
             },
             {
                 "name": "Moonlight Ivory Chantilly Bridal Gown",
@@ -196,14 +200,22 @@ async def seed():
                 "image_url": "https://images.unsplash.com/photo-1594552072238-b8a33785b261?auto=format&fit=crop&w=800&q=80",
                 "category_id": cat_map.get("Bridal Gowns", 2),
                 "status": AssetStatus.available,
+                "buy_price": 52000.0,
+                "rental_price": 4199.0,
+                "listing_type": "both",
+                "sizes": "XS,S,M,L",
             },
             {
                 "name": "Royal Jodhpur Raw Silk Sherwani",
                 "asset_code": "ROYAL-JODH-001",
                 "description": "Regal ivory raw silk sherwani tailored with hand-carved enamel buttons and subtle zardozi collar embroidery.",
-                "image_url": "https://images.unsplash.com/photo-1597983073493-88cd35cf93b0?auto=format&fit=crop&w=800&q=80",
+                "image_url": "https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=800&q=80",
                 "category_id": cat_map.get("Heritage Sherwanis", 3),
                 "status": AssetStatus.available,
+                "buy_price": 42000.0,
+                "rental_price": 3299.0,
+                "listing_type": "both",
+                "sizes": "38,40,42,44",
             },
             {
                 "name": "Kashi Heritage Kadwa Banarasi Saree",
@@ -212,6 +224,10 @@ async def seed():
                 "image_url": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80",
                 "category_id": cat_map.get("Royal Banarasi Sarees", 4),
                 "status": AssetStatus.available,
+                "buy_price": 34000.0,
+                "rental_price": 2699.0,
+                "listing_type": "both",
+                "sizes": "Free Size (Includes Unstitched Blouse)",
             },
             {
                 "name": "Midnight Velvet Peak Lapel Tuxedo",
@@ -220,6 +236,10 @@ async def seed():
                 "image_url": "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80",
                 "category_id": cat_map.get("Cocktail Tuxedos", 5),
                 "status": AssetStatus.available,
+                "buy_price": 36000.0,
+                "rental_price": 2999.0,
+                "listing_type": "both",
+                "sizes": "38,40,42,44",
             },
             {
                 "name": "Kundan & Uncut Polki Choker Suite",
@@ -228,11 +248,16 @@ async def seed():
                 "image_url": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=800&q=80",
                 "category_id": cat_map.get("Artisanal Jewellery", 6),
                 "status": AssetStatus.available,
+                "buy_price": 28000.0,
+                "rental_price": 2199.0,
+                "listing_type": "both",
+                "sizes": "One Size Adjustable",
             },
         ]
         for a in sample_assets:
             asset_res = await db.execute(select(Asset).where(Asset.asset_code == a["asset_code"]))
-            if not asset_res.scalars().first():
+            existing_asset = asset_res.scalars().first()
+            if not existing_asset:
                 asset = Asset(
                     name=a["name"],
                     asset_code=a["asset_code"],
@@ -240,12 +265,38 @@ async def seed():
                     image_url=a["image_url"],
                     category_id=a["category_id"],
                     status=a["status"],
+                    buy_price=a["buy_price"],
+                    rental_price=a["rental_price"],
+                    listing_type=a["listing_type"],
+                    sizes=a["sizes"],
                     is_active=True,
                     is_in_dry_cleaning=False,
                 )
                 db.add(asset)
                 await db.commit()
                 print(f"[OK] Luxury Asset created: {a['name']} ({a['asset_code']})")
+            else:
+                # Update seeded asset if missing prices or has legacy mismatched photo
+                updated = False
+                if existing_asset.buy_price is None or existing_asset.buy_price <= 0:
+                    existing_asset.buy_price = a["buy_price"]
+                    updated = True
+                if existing_asset.rental_price is None or existing_asset.rental_price <= 0:
+                    existing_asset.rental_price = a["rental_price"]
+                    updated = True
+                if not existing_asset.sizes:
+                    existing_asset.sizes = a["sizes"]
+                    updated = True
+                # If old mismatched images were present on seeded records, update to authentic
+                if "583391733956-3750e0ff4e8b" in (existing_asset.image_url or "") and a["asset_code"] == "CRIMSON-EMP-001":
+                    existing_asset.image_url = a["image_url"]
+                    updated = True
+                elif "597983073493-88cd35cf93b0" in (existing_asset.image_url or "") and a["asset_code"] == "ROYAL-JODH-001":
+                    existing_asset.image_url = a["image_url"]
+                    updated = True
+                if updated:
+                    await db.commit()
+                    print(f"[OK] Standardized pricing and imagery for {a['asset_code']}")
 
     print("\n==========================================")
     print("ELENORA DATABASE SEEDING COMPLETED")

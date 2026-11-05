@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api';
 import type { Asset, BlockedDateRange } from '../types';
+import { formatINR } from '../utils/currency';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function getErrorMessage(error: unknown, fallback: string): string {
@@ -126,6 +127,42 @@ export function AssetBookingModal({
     }
   }, [availableSizes, selectedSize]);
 
+  // Restore draft booking state if previously preserved before redirecting to login
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem("elanora_draft_rental");
+      if (saved && asset?.id) {
+        const draft = JSON.parse(saved);
+        if (draft.assetId === asset.id) {
+          if (draft.selectedPlanId) setSelectedPlanId(draft.selectedPlanId);
+          if (draft.pickupDate) setPickupDate(draft.pickupDate);
+          if (draft.aadhaarNumber) setAadhaarNumber(draft.aadhaarNumber);
+          if (draft.panNumber) setPanNumber(draft.panNumber);
+          if (draft.selectedSize) setSelectedSize(draft.selectedSize);
+        }
+      }
+    } catch (e) {
+      console.warn("Could not parse rental draft", e);
+    }
+  }, [asset?.id]);
+
+  const handleGuestRedirectToLogin = () => {
+    if (asset?.id) {
+      const draft = {
+        assetId: asset.id,
+        selectedPlanId,
+        pickupDate,
+        aadhaarNumber,
+        panNumber,
+        selectedSize,
+      };
+      sessionStorage.setItem("elanora_draft_rental", JSON.stringify(draft));
+    }
+    onClose();
+    const returnUrl = `${location.pathname}?resumeBooking=1`;
+    navigate(`/login?redirect=${encodeURIComponent(returnUrl)}`);
+  };
+
   // 1. Fetch rental plans (public endpoint)
   const plansQuery = useQuery({
     queryKey: ['plans'],
@@ -231,6 +268,7 @@ export function AssetBookingModal({
       });
     },
     onSuccess: () => {
+      try { sessionStorage.removeItem("elanora_draft_rental"); } catch {}
       setNotice('Booking reservation created successfully! Our concierge will review and allocate.');
       setError('');
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
@@ -288,7 +326,7 @@ export function AssetBookingModal({
     if (!aadhaarValid) return 'Enter 12-Digit Aadhaar';
     if (!panValid) return 'Enter 10-Char PAN (ABCDE1234F)';
     if (hasDateOverlap) return 'Selected Dates Unavailable';
-    return `Continue · ₹${grandTotal.toLocaleString('en-IN')}`;
+    return `Continue · ${formatINR(grandTotal)}`;
   };
 
   return (
@@ -388,10 +426,7 @@ export function AssetBookingModal({
               </div>
               <button
                 type="button"
-                onClick={() => {
-                  onClose();
-                  navigate(`/login?redirect=${encodeURIComponent(location.pathname)}`);
-                }}
+                onClick={handleGuestRedirectToLogin}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '6px',
                   padding: '6px 14px', borderRadius: '6px',
@@ -932,10 +967,7 @@ export function AssetBookingModal({
                 {!token ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      onClose();
-                      navigate(`/login?redirect=${encodeURIComponent(location.pathname)}`);
-                    }}
+                    onClick={handleGuestRedirectToLogin}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '8px',
                       padding: '10px 24px',

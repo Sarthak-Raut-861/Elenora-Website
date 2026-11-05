@@ -26,23 +26,27 @@ export function AdminDashboardPage() {
   const navigate = useNavigate();
   const { token } = useAuth();
 
-  const { data: assets = [] } = useQuery<Asset[]>({
+  const { data: rawAssets = [] } = useQuery<Asset[]>({
     queryKey: ["admin-assets", token],
     queryFn: () => api.listAssets(token),
     enabled: Boolean(token),
   });
 
-  const { data: bookings = [] } = useQuery<Booking[]>({
+  const { data: rawBookings = [] } = useQuery<Booking[]>({
     queryKey: ["admin-bookings", token],
     queryFn: () => api.listAdminBookings(token!),
     enabled: Boolean(token),
   });
 
-  const { data: usersList = [] } = useQuery<User[]>({
+  const { data: rawUsersList = [] } = useQuery<User[]>({
     queryKey: ["admin-users", token],
     queryFn: () => api.listUsers(token!),
     enabled: Boolean(token),
   });
+
+  const bookings = Array.isArray(rawBookings) ? rawBookings : [];
+  const assets = Array.isArray(rawAssets) ? rawAssets : [];
+  const usersList = Array.isArray(rawUsersList) ? rawUsersList : [];
 
   const assetMap = useMemo(() => {
     const map = new Map<number, Asset>();

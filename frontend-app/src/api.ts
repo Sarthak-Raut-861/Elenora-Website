@@ -42,6 +42,14 @@ export class ApiError extends Error {
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {
+  const contentType = response.headers.get('content-type') || ''
+  if (contentType.includes('text/html')) {
+    throw new ApiError(
+      `API endpoint returned HTML instead of JSON (${response.status}). Please verify service routing.`,
+      response.status
+    )
+  }
+
   const data = (await response.json().catch(() => null)) as
     | T
     | { detail?: string | Array<{ msg?: string; loc?: Array<string | number> }> }
@@ -64,6 +72,10 @@ async function parseResponse<T>(response: Response): Promise<T> {
     }
 
     throw new ApiError(message, response.status)
+  }
+
+  if (data === null) {
+    throw new ApiError(`Invalid or empty response from server (${response.status})`, response.status)
   }
 
   return data as T

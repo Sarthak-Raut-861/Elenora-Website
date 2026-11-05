@@ -48,10 +48,11 @@ export function AdminCategoriesPage() {
   });
 
   // Fetch Assets to calculate real-time inventory counts per category
-  const { data: assets = [] } = useQuery<Asset[]>({
+  const { data: rawAssets = [] } = useQuery<Asset[]>({
     queryKey: ["admin-assets"],
     queryFn: () => api.listAssetsFiltered(token),
   });
+  const assets = Array.isArray(rawAssets) ? rawAssets : [];
 
   // Calculate items assigned to each category
   const getAssetsForCategory = (categoryId: number) => {

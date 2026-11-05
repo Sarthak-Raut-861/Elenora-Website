@@ -212,7 +212,7 @@ export function ProfilePage() {
     queryFn: () => api.listBookings(token!),
     enabled: Boolean(token),
   });
-  const bookings = bookingsQuery.data ?? [];
+  const bookings = Array.isArray(bookingsQuery.data) ? bookingsQuery.data : [];
   const totalBookings = bookings.length;
   const completedBookings = bookings.filter((b) => b.status === "returned").length;
   const activeBookings = bookings.filter((b) => ["picked_up", "overdue"].includes(b.status)).length;

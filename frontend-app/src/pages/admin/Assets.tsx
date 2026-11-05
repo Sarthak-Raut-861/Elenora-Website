@@ -60,15 +60,17 @@ export function AdminAssetsPage() {
     { color: "Champagne Gold", hex: "#C9A34A", image_url: "" },
   ]);
 
-  const { data: assets = [], isLoading } = useQuery<Asset[]>({
+  const { data: rawAssets = [], isLoading } = useQuery<Asset[]>({
     queryKey: ["admin-assets", token],
     queryFn: () => api.listAssets(token),
   });
+  const assets = Array.isArray(rawAssets) ? rawAssets : [];
 
-  const { data: categories = [] } = useQuery<Category[]>({
+  const { data: rawCategories = [] } = useQuery<Category[]>({
     queryKey: ["categories"],
     queryFn: () => api.listCategories(token),
   });
+  const categories = Array.isArray(rawCategories) ? rawCategories : [];
 
   const clearFieldError = (field: string) => {
     setFormErrors((prev) => {

@@ -767,7 +767,7 @@ export function BookingsPage() {
     cancelMutation.isPending ||
     returnMutation.isPending
 
-  const bookings = bookingsQuery.data ?? []
+  const bookings = Array.isArray(bookingsQuery.data) ? bookingsQuery.data : []
   const buyBookings = bookings.filter((b) => b.order_type === 'buy')
   const rentalBookings = bookings.filter((b) => b.order_type !== 'buy')
   const activeBookings = rentalBookings.filter((b) => ['picked_up', 'overdue', 'ready_for_pickup', 'return_requested', 'rent_paid'].includes(b.status))

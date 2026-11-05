@@ -182,10 +182,12 @@ export function HomePage() {
     return () => clearInterval(timer);
   }, [isPlaying]);
 
-  const { data: assets = [] } = useQuery({
+  const { data: rawAssets = [] } = useQuery({
     queryKey: ["home-assets"],
     queryFn: () => api.listAssets(token),
   });
+
+  const assets = Array.isArray(rawAssets) ? rawAssets : [];
 
   const featuredAssets = assets.filter((asset) => {
     if (activeCategoryFilter === "All") return true;

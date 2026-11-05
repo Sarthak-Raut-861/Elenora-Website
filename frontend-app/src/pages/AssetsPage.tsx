@@ -64,15 +64,17 @@ export function AssetsPage() {
     setSearchParams(newParams);
   };
 
-  const { data: categories = [] } = useQuery<Category[]>({
+  const { data: rawCategories = [] } = useQuery<Category[]>({
     queryKey: ["categories"],
     queryFn: () => api.listCategories(token),
   });
+  const categories = Array.isArray(rawCategories) ? rawCategories : [];
 
-  const { data: assets = [], isLoading } = useQuery<Asset[]>({
+  const { data: rawAssets = [], isLoading } = useQuery<Asset[]>({
     queryKey: ["assets"],
     queryFn: () => api.listAssets(token),
   });
+  const assets = Array.isArray(rawAssets) ? rawAssets : [];
 
   // Filter assets by search, category, and Rent vs Buy section
   const filteredAssets = assets.filter((asset) => {

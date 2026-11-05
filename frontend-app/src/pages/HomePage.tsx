@@ -24,7 +24,7 @@ import { useAuth } from "../auth-context";
 import { useWishlist } from "../wishlist-context";
 import { AssetBookingModal } from "../components/AssetBookingModal";
 import { BoutiqueAddressShowcase } from "../components/BoutiqueAddressShowcase";
-import type { Asset } from "../types";
+import type { Asset, Category } from "../types";
 import { formatINR } from "../utils/currency";
 
 // ── Hero Slides (Matching Rozina Editorial Standard) ──
@@ -141,7 +141,13 @@ export function HomePage() {
     queryFn: () => api.listAssets(token),
   });
 
+  const { data: rawCategories = [] } = useQuery<Category[]>({
+    queryKey: ["home-categories"],
+    queryFn: () => api.listCategories(token),
+  });
+
   const assets = Array.isArray(rawAssets) ? rawAssets : [];
+  const categories = Array.isArray(rawCategories) ? rawCategories : [];
 
   // Group assets by piece name so duplicate physical units do not repeat on homepage
   const uniqueAssets = useMemo<Asset[]>(() => {
@@ -168,6 +174,34 @@ export function HomePage() {
     const buy = asset.buy_price || 35000;
     return buy <= 40000;
   });
+
+  // Filter candidate bridal outfits from uploaded assets
+  const bridalAssetsPool = useMemo(() => {
+    const matching = uniqueAssets.filter((a) => {
+      const cat = categories.find((c) => c.id === a.category_id);
+      const catName = (cat?.name || "").toLowerCase();
+      const aName = a.name.toLowerCase();
+      const aDesc = (a.description || "").toLowerCase();
+      return (
+        catName.includes("bridal") ||
+        catName.includes("wedding") ||
+        catName.includes("lehenga") ||
+        aName.includes("bridal") ||
+        aName.includes("lehenga") ||
+        aDesc.includes("bridal") ||
+        aDesc.includes("wedding")
+      );
+    });
+    return matching;
+  }, [uniqueAssets, categories]);
+
+  // Pick 4 random bridal outfits once per page load
+  const randomBridalOutfits = useMemo(() => {
+    const pool = bridalAssetsPool.length > 0 ? bridalAssetsPool : uniqueAssets;
+    if (pool.length === 0) return [];
+    const shuffled = [...pool].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, 4);
+  }, [bridalAssetsPool, uniqueAssets]);
 
   const slide = HERO_SLIDES[currentSlide];
   const activeLook = SHOP_THE_LOOK_ITEMS[activeLookIndex];
@@ -688,70 +722,123 @@ export function HomePage() {
           </div>
 
           {/* 4 Featured Products From This Edit */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 28 }}>
-            {[
-              {
-                title: "Burgundy Velvet Royal Palace Bridal Lehenga",
-                sku: "BRL-101",
-                buy: 58000,
-                rent: 4499,
-                img: "/royal-bridal-banner.jpg",
-              },
-              {
-                title: "The Crimson Empress Zardozi Bridal Lehenga",
-                sku: "BRL-102",
-                buy: 52000,
-                rent: 3899,
-                img: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80",
-              },
-              {
-                title: "Noor Ivory & Molten Gold Embroidered Bridal Ensemble",
-                sku: "BRL-103",
-                buy: 46500,
-                rent: 3499,
-                img: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80",
-              },
-              {
-                title: "Heritage Royal Rose Hand-Embroidered Bridal Set",
-                sku: "BRL-104",
-                buy: 49000,
-                rent: 3699,
-                img: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=800&q=80",
-              },
-            ].map((p, idx) => (
-              <div
-                key={idx}
-                style={{
-                  background: "#121212",
-                  borderRadius: 8,
-                  overflow: "hidden",
-                  border: "1px solid rgba(255, 255, 255, 0.08)",
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
-                <div style={{ aspectRatio: "3 / 4", overflow: "hidden", cursor: "pointer" }} onClick={() => navigate(`/assets?search=${encodeURIComponent(p.title)}`)}>
-                  <img src={p.img} alt={p.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                </div>
-                <div style={{ padding: "16px 14px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                  <div>
-                    <span style={{ fontSize: "0.65rem", color: "#C9A34A", fontWeight: 700, letterSpacing: "0.12em" }}>SKU: {p.sku}</span>
-                    <h4 style={{ fontFamily: "var(--font-brand)", fontSize: "0.95rem", color: "#FFFFFF", margin: "4px 0 10px", lineHeight: 1.4 }}>{p.title}</h4>
-                  </div>
-                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
-                      <span style={{ fontSize: "0.64rem", color: "#888", display: "block" }}>Buy: {formatINR(p.buy)}</span>
-                      <span style={{ fontSize: "0.95rem", color: "#C9A34A", fontWeight: 800 }}>Rent: {formatINR(p.rent)}/day</span>
-                    </div>
-                    <button onClick={() => navigate(`/assets?search=${encodeURIComponent(p.title)}`)} className="btn-gold-outline" style={{ padding: "6px 14px", fontSize: "0.72rem" }}>
-                      Reserve
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          {randomBridalOutfits.length === 0 ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "48px 24px",
+                background: "#141414",
+                borderRadius: 12,
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                maxWidth: 640,
+                margin: "0 auto",
+              }}
+            >
+              <p style={{ color: "var(--color-text-muted)", fontSize: "0.92rem", margin: 0 }}>
+                Bridal collection outfits uploaded in Admin will appear here automatically.
+              </p>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 28 }}>
+              {randomBridalOutfits.map((asset) => {
+                const buyPrice = formatINR(asset.buy_price || 38000);
+                const rentPrice = formatINR(asset.rental_price || 2899);
+                const lType = asset.listing_type || "both";
+                const isBuyable = lType !== "rent";
+                const isRentable = lType !== "buy";
 
+                return (
+                  <motion.div
+                    key={asset.id}
+                    whileHover={{ y: -6 }}
+                    transition={{ duration: 0.25 }}
+                    style={{
+                      background: "#121212",
+                      borderRadius: 8,
+                      overflow: "hidden",
+                      border: "1px solid rgba(255, 255, 255, 0.08)",
+                      display: "flex",
+                      flexDirection: "column",
+                      boxShadow: "0 10px 30px rgba(0,0,0,0.6)",
+                    }}
+                  >
+                    <div
+                      style={{ aspectRatio: "3 / 4", overflow: "hidden", cursor: "pointer", position: "relative", background: "#181818" }}
+                      onClick={() => navigate(`/assets/${asset.id}`)}
+                    >
+                      <img
+                        src={asset.image_url || "/royal-bridal-banner.jpg"}
+                        alt={asset.name}
+                        style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.5s ease" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.06)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                      />
+                      <div style={{ position: "absolute", top: 10, left: 10, zIndex: 5 }}>
+                        <span
+                          style={{
+                            padding: "3px 10px",
+                            borderRadius: "9999px",
+                            fontSize: "0.64rem",
+                            fontWeight: 700,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.08em",
+                            background: lType === "rent" ? "#C9A34A" : "rgba(255, 255, 255, 0.95)",
+                            color: "#0B0B0B",
+                          }}
+                        >
+                          {lType === "rent" ? "Rent Vault" : lType === "buy" ? "Buy to Own" : "Rent | Buy"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ padding: "16px 14px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                      <div>
+                        <span style={{ fontSize: "0.65rem", color: "#C9A34A", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                          SKU: {asset.asset_code}
+                        </span>
+                        <h4
+                          onClick={() => navigate(`/assets/${asset.id}`)}
+                          style={{
+                            fontFamily: "var(--font-brand)",
+                            fontSize: "0.95rem",
+                            color: "#FFFFFF",
+                            margin: "4px 0 10px",
+                            lineHeight: 1.4,
+                            cursor: "pointer",
+                          }}
+                        >
+                          {asset.name}
+                        </h4>
+                      </div>
+
+                      <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          {isBuyable && (
+                            <span style={{ fontSize: "0.64rem", color: "#888", display: "block" }}>
+                              Buy: {buyPrice}
+                            </span>
+                          )}
+                          {isRentable && (
+                            <span style={{ fontSize: "0.95rem", color: "#C9A34A", fontWeight: 800 }}>
+                              Rent: {rentPrice}<span style={{ fontSize: "0.7rem", fontWeight: 500 }}>/day</span>
+                            </span>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => navigate(`/assets/${asset.id}`)}
+                          className="btn-gold-outline"
+                          style={{ padding: "6px 14px", fontSize: "0.72rem" }}
+                        >
+                          Reserve
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 

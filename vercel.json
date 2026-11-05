@@ -3,27 +3,11 @@
   "outputDirectory": "frontend-app/dist",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index.py"
-    },
-    {
       "source": "/uploads/(.*)",
-      "destination": "/api/index.py"
+      "destination": "https://elenora-website.onrender.com/uploads/$1"
     },
     {
-      "source": "/health",
-      "destination": "/api/index.py"
-    },
-    {
-      "source": "/docs",
-      "destination": "/api/index.py"
-    },
-    {
-      "source": "/openapi.json",
-      "destination": "/api/index.py"
-    },
-    {
-      "source": "/((?!api/|uploads/|health|docs|openapi.json).*)",
+      "source": "/((?!uploads/).*)",
       "destination": "/index.html"
     }
   ]

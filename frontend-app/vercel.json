@@ -2,9 +2,12 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     {
-      "source": "/((?!api/|uploads/|health|docs|openapi.json).*)",
+      "source": "/uploads/(.*)",
+      "destination": "https://elenora-website.onrender.com/uploads/$1"
+    },
+    {
+      "source": "/((?!uploads/).*)",
       "destination": "/index.html"
     }
   ]
 }
-

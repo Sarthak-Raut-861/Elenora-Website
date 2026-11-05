@@ -32,6 +32,53 @@ const API_BASE_URL =
     : 'https://elenora-website.onrender.com/api'
 const TOKEN_KEY = 'asset_tracking_access_token'
 
+export function resolveMediaUrl(url: string | null | undefined): string {
+  if (!url) return ''
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  const base = API_BASE_URL.replace(/\/api\/?$/, '')
+  const cleanPath = url.startsWith('/') ? url : `/${url}`
+  return `${base}${cleanPath}`
+}
+
+function normalizeAsset(asset: Asset): Asset {
+  if (!asset) return asset
+  const resolvedMain = resolveMediaUrl(asset.image_url)
+  let resolvedGallery: string[] = []
+  if (asset.gallery_images) {
+    try {
+      const parsed = typeof asset.gallery_images === 'string' ? JSON.parse(asset.gallery_images) : asset.gallery_images
+      if (Array.isArray(parsed)) {
+        resolvedGallery = parsed.map((img: string) => resolveMediaUrl(img))
+      }
+    } catch {
+      // keep existing
+    }
+  }
+
+  let resolvedVariants = asset.color_variants
+  if (asset.color_variants) {
+    try {
+      const parsed = typeof asset.color_variants === 'string' ? JSON.parse(asset.color_variants) : asset.color_variants
+      if (Array.isArray(parsed)) {
+        const mapped = parsed.map((v: any) => ({
+          ...v,
+          image_url: resolveMediaUrl(v.image_url),
+        }))
+        resolvedVariants = JSON.stringify(mapped)
+      }
+    } catch {
+      // keep existing
+    }
+  }
+
+  return {
+    ...asset,
+    image_url: resolvedMain || asset.image_url,
+    gallery_images: resolvedGallery.length > 0 ? JSON.stringify(resolvedGallery) : asset.gallery_images,
+    color_variants: resolvedVariants,
+  }
+}
+
 export class ApiError extends Error {
   status: number
 
@@ -145,10 +192,15 @@ export const api = {
   changePassword: (token: string, payload: { current_password: string; new_password: string }) =>
     request<{ detail: string }>('/auth/change-password', { method: 'POST', token, body: payload }),
 
-  listAssets: (token: string | null) => request<Asset[]>('/assets/', { token: token || null }),
-  getAsset: (token: string | null, assetId: number) =>
-    request<Asset>(`/assets/${assetId}`, { token: token || null }),
-  listAssetsFiltered: (
+  listAssets: async (token: string | null) => {
+    const list = await request<Asset[]>('/assets/', { token: token || null })
+    return Array.isArray(list) ? list.map(normalizeAsset) : []
+  },
+  getAsset: async (token: string | null, assetId: number) => {
+    const item = await request<Asset>(`/assets/${assetId}`, { token: token || null })
+    return normalizeAsset(item)
+  },
+  listAssetsFiltered: async (
     token: string | null,
     params?: { name?: string; category_name?: string; status?: string; listing_type?: string },
   ) => {
@@ -158,7 +210,8 @@ export const api = {
     if (params?.status) query.set('status', params.status)
     if (params?.listing_type) query.set('listing_type', params.listing_type)
     const q = query.toString()
-    return request<Asset[]>(`/assets/${q ? `?${q}` : ''}`, { token: token || null })
+    const list = await request<Asset[]>(`/assets/${q ? `?${q}` : ''}`, { token: token || null })
+    return Array.isArray(list) ? list.map(normalizeAsset) : []
   },
   updateAsset: (
     token: string,
@@ -308,7 +361,7 @@ export const api = {
     })
     if (!res.ok) throw new Error('Failed to upload images')
     const data = await res.json()
-    return data.image_urls || []
+    return (data.image_urls || []).map((u: string) => resolveMediaUrl(u))
   },
 
   uploadSingleImage: async (token: string, file: File): Promise<string> => {
@@ -321,7 +374,7 @@ export const api = {
     })
     if (!res.ok) throw new Error('Failed to upload image')
     const data = await res.json()
-    return data.image_url
+    return resolveMediaUrl(data.image_url)
   },
 
   // Dry Cleaning

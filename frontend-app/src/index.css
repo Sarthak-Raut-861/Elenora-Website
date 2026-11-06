@@ -1202,3 +1202,152 @@ select[style*="background: '#fff', padding: '0 8px'"] {
 .luxury-modal-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(201, 163, 74, 0.75);
 }
+
+
+/* ==========================================================================
+   MOBILE & TABLET RESPONSIVENESS ENHANCEMENTS
+   ========================================================================== */
+
+/* Tablet & Mobile: Shop The Look grid stacks into 1 column */
+@media (max-width: 960px) {
+  .shop-the-look-grid {
+    grid-template-columns: 1fr !important;
+    gap: 28px !important;
+  }
+}
+
+/* Phones (width <= 768px) */
+@media (max-width: 768px) {
+  /* Navbar Responsive Padding */
+  .navbar-container-responsive {
+    padding: 0 16px !important;
+  }
+
+  /* Hero Slider Height on Mobile */
+  .hero-slider-section {
+    height: clamp(500px, 78vh, 640px) !important;
+  }
+
+  /* Section Padding */
+  .section-padding-responsive {
+    padding: 44px 16px !important;
+  }
+
+  /* Section Headings */
+  .section-heading-title {
+    font-size: clamp(1.7rem, 6.5vw, 2.3rem) !important;
+    margin: 4px 0 10px !important;
+  }
+
+  /* Hero Slider on Phones */
+  .hero-slide-mobile-bg {
+    background-position: 78% center !important;
+  }
+  .hero-slide-mobile-bg.hero-center-bg {
+    background-position: center 25% !important;
+  }
+  .hero-slide-overlay {
+    align-items: center !important;
+    text-align: center !important;
+    padding: 0 16px !important;
+  }
+  .hero-slide-content {
+    max-width: 100% !important;
+  }
+  .hero-title-text {
+    font-size: clamp(1.85rem, 7.5vw, 2.8rem) !important;
+    line-height: 1.12 !important;
+    margin-bottom: 12px !important;
+  }
+  .hero-sub-text {
+    font-size: clamp(0.85rem, 3.8vw, 1rem) !important;
+    margin-bottom: 24px !important;
+    line-height: 1.5 !important;
+  }
+  .hero-badge-tag {
+    font-size: 0.65rem !important;
+    letter-spacing: 0.16em !important;
+  }
+  .hero-controls-bar {
+    bottom: 16px !important;
+    padding: 6px 14px !important;
+    gap: 12px !important;
+  }
+
+  /* Shop The Look on Phones */
+  .shop-the-look-main-photo {
+    aspect-ratio: 4 / 5 !important;
+  }
+  .shop-the-look-main-caption {
+    padding: 16px !important;
+  }
+  .shop-the-look-main-title {
+    font-size: 1.25rem !important;
+    margin: 4px 0 6px !important;
+  }
+  .shop-the-look-card {
+    padding: 12px !important;
+    gap: 12px !important;
+  }
+  .shop-the-look-card-img {
+    width: 72px !important;
+    height: 96px !important;
+  }
+
+  /* Heritage Bridal Edit Banner on Phones */
+  .bridal-banner-box {
+    padding: 36px 16px !important;
+    min-height: 320px !important;
+    margin-bottom: 28px !important;
+  }
+  .bridal-banner-title {
+    font-size: clamp(1.6rem, 6vw, 2.4rem) !important;
+  }
+
+  /* Generic Responsive Grid for Product Cards */
+  .home-product-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)) !important;
+    gap: 18px !important;
+  }
+
+  /* Filter Pills Row on Phones */
+  .filter-pills-row {
+    gap: 8px !important;
+  }
+  .filter-pill-btn {
+    padding: 6px 14px !important;
+    font-size: 0.72rem !important;
+  }
+
+  /* Boutique Showcase on Phones */
+  .boutique-cards-grid {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+
+  /* Newsletter Form on Phones */
+  .newsletter-form-input {
+    min-width: 100% !important;
+    margin-bottom: 6px !important;
+  }
+  .newsletter-form-btn {
+    width: 100% !important;
+    padding: 12px 24px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-slider-section {
+    height: 520px !important;
+  }
+  .navbar-container-responsive {
+    padding: 0 12px !important;
+  }
+  .hero-title-text {
+    font-size: 1.75rem !important;
+  }
+  .shop-the-look-card-img {
+    width: 66px !important;
+    height: 88px !important;
+  }
+}

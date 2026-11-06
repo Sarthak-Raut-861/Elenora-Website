@@ -139,7 +139,7 @@ export function AppLayout() {
         }}
         onMouseLeave={() => setShopMenuOpen(false)}
       >
-        <div style={{ maxWidth: 1380, margin: "0 auto", padding: "0 32px" }}>
+        <div className="navbar-container-responsive" style={{ maxWidth: 1380, margin: "0 auto", padding: "0 32px" }}>
           <div style={{ height: 70, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
 
             {/* ── LEFT ZONE: EXACTLY 3 MINIMAL LINKS (Home, Shop ⌵, Contact Us) ── */}
@@ -835,6 +835,91 @@ export function AppLayout() {
                 >
                   Contact Us
                 </NavLink>
+
+                {token ? (
+                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 14, marginTop: 4, display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: "0.85rem", color: "#C9A34A", fontWeight: 600 }}>{user?.full_name || "Client Patron"}</span>
+                      <span style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.5)", textTransform: "uppercase" }}>{user?.role || "patron"}</span>
+                    </div>
+                    <NavLink
+                      to="/profile"
+                      style={{ color: "#FFFFFF", textDecoration: "none", fontSize: "0.92rem", display: "flex", alignItems: "center", gap: 8 }}
+                    >
+                      <User size={15} color="#C9A34A" />
+                      <span>My Profile & Settings</span>
+                    </NavLink>
+                    <NavLink
+                      to="/bookings"
+                      style={{ color: "rgba(255,255,255,0.85)", textDecoration: "none", fontSize: "0.92rem" }}
+                    >
+                      My Rental Bookings
+                    </NavLink>
+                    {(user?.role === "admin" || user?.role === "staff") && (
+                      <NavLink
+                        to="/admin/assets"
+                        style={{
+                          color: "#C9A34A",
+                          textDecoration: "none",
+                          fontSize: "0.92rem",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          padding: "8px 12px",
+                          background: "rgba(201,163,74,0.12)",
+                          borderRadius: 8,
+                          border: "1px solid rgba(201,163,74,0.3)",
+                        }}
+                      >
+                        <Crown size={15} color="#C9A34A" />
+                        <span>Admin Console</span>
+                      </NavLink>
+                    )}
+                    <button
+                      onClick={logout}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#ef4444",
+                        fontSize: "0.9rem",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: 0,
+                        textAlign: "left",
+                        marginTop: 4,
+                      }}
+                    >
+                      <LogOut size={15} />
+                      <span>Sign Out</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 14, marginTop: 4 }}>
+                    <NavLink
+                      to="/login"
+                      style={{
+                        color: "#0B0B0B",
+                        background: "linear-gradient(135deg, #ECC880, #C9A34A)",
+                        textDecoration: "none",
+                        fontSize: "0.88rem",
+                        fontWeight: 700,
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                        padding: "10px 16px",
+                        borderRadius: 8,
+                      }}
+                    >
+                      <User size={15} />
+                      <span>Sign In / Register</span>
+                    </NavLink>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}

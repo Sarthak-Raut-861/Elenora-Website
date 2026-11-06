@@ -369,6 +369,7 @@ export function HomePage() {
 
       {/* ── 1. ROZINA-INSPIRED FULL-BLEED EDITORIAL HERO SLIDER ─────────── */}
       <section
+        className="hero-slider-section"
         style={{
           position: "relative",
           width: "100%",
@@ -384,6 +385,9 @@ export function HomePage() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0.25 }}
             transition={{ duration: 0.85, ease: "easeOut" }}
+            className={`hero-bg-layer ${
+              (slide as any).align === "left" ? "hero-slide-mobile-bg" : "hero-slide-mobile-bg hero-center-bg"
+            }`}
             style={{
               position: "absolute",
               inset: 0,
@@ -401,6 +405,7 @@ export function HomePage() {
           const isLeft = (slide as any).align === "left";
           return (
             <div
+              className="hero-slide-overlay"
               style={{
                 position: "absolute",
                 inset: 0,
@@ -418,11 +423,13 @@ export function HomePage() {
                 initial={{ opacity: 0, y: 22 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 }}
+                className="hero-slide-content"
                 style={{ maxWidth: isLeft ? 640 : 860 }}
               >
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
                   <span style={{ width: 32, height: 1, background: "linear-gradient(90deg, transparent, #C9A34A)" }} />
                   <span
+                    className="hero-badge-tag"
                     style={{
                       fontFamily: "var(--font-sans)",
                       fontSize: "0.76rem",
@@ -438,10 +445,10 @@ export function HomePage() {
                 </div>
 
                 <h1
-                  className="gold-metallic-text"
+                  className="gold-metallic-text hero-title-text"
                   style={{
                     fontFamily: "var(--font-brand)",
-                    fontSize: "clamp(2.8rem, 5.5vw, 4.8rem)",
+                    fontSize: "clamp(2.4rem, 5.5vw, 4.8rem)",
                     fontWeight: 600,
                     letterSpacing: "0.08em",
                     margin: "0 0 14px",
@@ -453,6 +460,7 @@ export function HomePage() {
                 </h1>
 
                 <p
+                  className="hero-sub-text"
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: "clamp(0.92rem, 1.6vw, 1.15rem)",
@@ -511,6 +519,7 @@ export function HomePage() {
 
         {/* Bottom Slider Controls: < • ∘ ∘ > || (Exact Rozina Layout) */}
         <div
+          className="hero-controls-bar"
           style={{
             position: "absolute",
             bottom: 24,
@@ -579,7 +588,7 @@ export function HomePage() {
       </section>
 
       {/* ── 2. NEW ARRIVALS (ROZINA 4-COLUMN PRODUCT GRID) ────────────────── */}
-      <section style={{ padding: "64px 20px 48px" }}>
+      <section className="section-padding-responsive" style={{ padding: "64px 20px 48px" }}>
         <div style={{ maxWidth: 1320, margin: "0 auto" }}>
           
           {/* Section Header */}
@@ -588,7 +597,7 @@ export function HomePage() {
               HAUTE COUTURE EDITORIAL
             </span>
             <h2
-              className="gold-metallic-text"
+              className="gold-metallic-text section-heading-title"
               style={{
                 fontFamily: "var(--font-brand)",
                 fontSize: "clamp(2rem, 4vw, 2.8rem)",
@@ -603,11 +612,12 @@ export function HomePage() {
             <div style={{ width: 60, height: 1, background: "linear-gradient(90deg, transparent, #C9A34A, transparent)", margin: "0 auto 24px" }} />
 
             {/* Filter pills: All, Rent Vault, Buy to Own, Categories */}
-            <div style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
+            <div className="filter-pills-row" style={{ display: "flex", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
               {["All", "Rent Vault", "Buy to Own", "Lehenga", "Gown", "Kurta"].map((pill) => (
                 <button
                   key={pill}
                   onClick={() => setActiveCategoryFilter(pill)}
+                  className="filter-pill-btn"
                   style={{
                     background: activeCategoryFilter === pill ? "#C9A34A" : "rgba(255, 255, 255, 0.05)",
                     color: activeCategoryFilter === pill ? "#0B0B0B" : "rgba(255, 255, 255, 0.75)",
@@ -645,7 +655,7 @@ export function HomePage() {
               </p>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 28 }}>
+            <div className="home-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 28 }}>
               {featuredAssets.slice(0, 8).map((asset: Asset) => {
               const buyPrice = formatINR(asset.buy_price || 38000);
               const rentPrice = formatINR(asset.rental_price || 2899);
@@ -833,10 +843,11 @@ export function HomePage() {
       </section>
 
       {/* ── 4. THE HERITAGE EDIT (ROZINA FULL-WIDTH EDITORIAL BANNER) ────── */}
-      <section style={{ padding: "64px 20px" }}>
+      <section className="section-padding-responsive" style={{ padding: "64px 20px" }}>
         <div style={{ maxWidth: 1320, margin: "0 auto" }}>
           
           <div
+            className="bridal-banner-box"
             style={{
               position: "relative",
               borderRadius: 16,
@@ -860,7 +871,7 @@ export function HomePage() {
                 CURATED ATELIER ARCHIVE
               </span>
               <h2
-                className="gold-metallic-text"
+                className="gold-metallic-text bridal-banner-title"
                 style={{
                   fontFamily: "var(--font-brand)",
                   fontSize: "clamp(2.4rem, 5vw, 3.8rem)",
@@ -904,7 +915,7 @@ export function HomePage() {
               </p>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 28 }}>
+            <div className="home-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 28 }}>
               {randomBridalOutfits.map((asset) => {
                 const buyPrice = formatINR(asset.buy_price || 38000);
                 const rentPrice = formatINR(asset.rental_price || 2899);
@@ -1008,7 +1019,7 @@ export function HomePage() {
       </section>
 
       {/* ── 5. SHOP THE LOOK (CURATED RENTAL GOWNS & JEWELLERY) ──────────── */}
-      <section style={{ padding: "64px 20px", background: "#0D0D0D", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+      <section className="section-padding-responsive" style={{ padding: "64px 20px", background: "#0D0D0D", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div style={{ maxWidth: 1320, margin: "0 auto" }}>
           
           <div style={{ textAlign: "center", marginBottom: 40 }}>
@@ -1016,7 +1027,7 @@ export function HomePage() {
               CURATED RENTAL STYLING
             </span>
             <h2
-              className="gold-metallic-text"
+              className="gold-metallic-text section-heading-title"
               style={{
                 fontFamily: "var(--font-brand)",
                 fontSize: "clamp(2rem, 4vw, 2.8rem)",
@@ -1033,11 +1044,12 @@ export function HomePage() {
             </p>
           </div>
 
-          {/* Interactive Split Grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 36, alignItems: "center" }}>
+          {/* Interactive Split Grid (Responsive on Mobile) */}
+          <div className="shop-the-look-grid" style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 36, alignItems: "center" }}>
             
             {/* Left: Big Editorial Photo with Active Look */}
             <div
+              className="shop-the-look-main-photo"
               style={{
                 position: "relative",
                 aspectRatio: "3 / 4",
@@ -1053,6 +1065,7 @@ export function HomePage() {
                 style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.5s ease" }}
               />
               <div
+                className="shop-the-look-main-caption"
                 style={{
                   position: "absolute",
                   inset: 0,
@@ -1071,7 +1084,7 @@ export function HomePage() {
                     {activeLook.sku}
                   </span>
                 </div>
-                <h3 style={{ fontFamily: "var(--font-brand)", fontSize: "1.5rem", color: "#FFFFFF", margin: "4px 0 8px", lineHeight: 1.25 }}>
+                <h3 className="shop-the-look-main-title" style={{ fontFamily: "var(--font-brand)", fontSize: "1.5rem", color: "#FFFFFF", margin: "4px 0 8px", lineHeight: 1.25 }}>
                   {activeLook.title}
                 </h3>
                 <p style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.75)", margin: "0 0 14px", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
@@ -1111,6 +1124,7 @@ export function HomePage() {
                   <div
                     key={item.id}
                     onClick={() => setActiveLookIndex(idx)}
+                    className="shop-the-look-card"
                     style={{
                       display: "flex",
                       gap: 18,
@@ -1125,6 +1139,7 @@ export function HomePage() {
                     <img
                       src={item.image}
                       alt={item.title}
+                      className="shop-the-look-card-img"
                       style={{ width: 88, height: 116, objectFit: "cover", borderRadius: 8, flexShrink: 0 }}
                     />
                     <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", flex: 1 }}>
@@ -1147,7 +1162,7 @@ export function HomePage() {
                         </p>
                       </div>
 
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8, flexWrap: "wrap", gap: 8 }}>
                         <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#C9A34A" }}>
                           Rent {formatINR(item.rentalPrice)}/day
                         </span>
@@ -1178,7 +1193,7 @@ export function HomePage() {
       </section>
 
       {/* ── 6. CURATED UNDER 40K (METICULOUSLY CRAFTED COUTURE) ──────────── */}
-      <section style={{ padding: "64px 20px" }}>
+      <section className="section-padding-responsive" style={{ padding: "64px 20px" }}>
         <div style={{ maxWidth: 1320, margin: "0 auto" }}>
           
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 36, flexWrap: "wrap", gap: 16 }}>
@@ -1187,7 +1202,7 @@ export function HomePage() {
                 ACCESSIBLE LUXURY
               </span>
               <h2
-                className="gold-metallic-text"
+                className="gold-metallic-text section-heading-title"
                 style={{
                   fontFamily: "var(--font-brand)",
                   fontSize: "clamp(2rem, 4vw, 2.8rem)",
@@ -1217,7 +1232,7 @@ export function HomePage() {
             </Link>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 28 }}>
+          <div className="home-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 28 }}>
             {[
               {
                 title: "Peach Net Jacket with Zari Sequin Embroidery & Skirt",
@@ -1285,7 +1300,7 @@ export function HomePage() {
       </section>
 
       {/* ── 7. EDITORIAL COLLECTIONS (EXACT MATCHING ROZINA "COLLECTIONS") ─── */}
-      <section style={{ padding: "64px 20px", background: "#0E0E0E", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+      <section className="section-padding-responsive" style={{ padding: "64px 20px", background: "#0E0E0E", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div style={{ maxWidth: 1320, margin: "0 auto" }}>
           
           <div style={{ textAlign: "center", marginBottom: 40 }}>
@@ -1293,7 +1308,7 @@ export function HomePage() {
               CURATED CATEGORIES
             </span>
             <h2
-              className="gold-metallic-text"
+              className="gold-metallic-text section-heading-title"
               style={{
                 fontFamily: "var(--font-brand)",
                 fontSize: "clamp(2rem, 4vw, 2.8rem)",
@@ -1311,7 +1326,7 @@ export function HomePage() {
           </div>
 
           {randomCollectionCategories.length > 0 ? (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
+            <div className="home-product-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
               {randomCollectionCategories.map((col, idx) => (
                 <motion.div
                   key={col.name + idx}
@@ -1369,7 +1384,7 @@ export function HomePage() {
       </section>
 
       {/* ── 8. SIGN-UP TO BE AN INSIDER (ROZINA NEWSLETTER CLUB) ─────────── */}
-      <section style={{ padding: "80px 20px", background: "#0B0B0B", borderTop: "1px solid rgba(255,255,255,0.08)", textAlign: "center" }}>
+      <section className="section-padding-responsive" style={{ padding: "80px 20px", background: "#0B0B0B", borderTop: "1px solid rgba(255,255,255,0.08)", textAlign: "center" }}>
         <div style={{ maxWidth: 680, margin: "0 auto" }}>
           <img
             src="/elanora-emblem.png"
@@ -1377,7 +1392,7 @@ export function HomePage() {
             style={{ width: 50, height: 50, objectFit: "contain", margin: "0 auto 16px", filter: "drop-shadow(0 0 12px rgba(201,163,74,0.4))" }}
           />
           <h2
-            className="gold-metallic-text"
+            className="gold-metallic-text section-heading-title"
             style={{
               fontFamily: "var(--font-brand)",
               fontSize: "clamp(2rem, 4vw, 2.6rem)",
@@ -1411,6 +1426,7 @@ export function HomePage() {
                 placeholder="Enter your email address"
                 value={newsletterEmail}
                 onChange={(e) => setNewsletterEmail(e.target.value)}
+                className="newsletter-form-input"
                 style={{
                   flex: 1,
                   minWidth: 260,
@@ -1425,7 +1441,7 @@ export function HomePage() {
               />
               <button
                 type="submit"
-                className="btn-rose-primary"
+                className="btn-rose-primary newsletter-form-btn"
                 style={{ padding: "14px 32px", fontSize: "0.82rem", letterSpacing: "0.15em", textTransform: "uppercase" }}
               >
                 Subscribe

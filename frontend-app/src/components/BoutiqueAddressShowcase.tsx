@@ -18,6 +18,7 @@ export function BoutiqueAddressShowcase() {
 
   return (
     <section
+      className="section-padding-responsive"
       style={{
         padding: "70px 20px",
         background: "#080808",
@@ -42,7 +43,7 @@ export function BoutiqueAddressShowcase() {
             FLAGSHIP ATELIER
           </span>
           <h2
-            className="gold-metallic-text"
+            className="gold-metallic-text section-heading-title"
             style={{
               fontFamily: "var(--font-brand)",
               fontSize: "clamp(2rem, 4vw, 2.8rem)",
@@ -71,7 +72,7 @@ export function BoutiqueAddressShowcase() {
         </div>
 
         {/* 2 Clean Minimal Luxury Cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 32 }}>
+        <div className="boutique-cards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 32 }}>
           
           {/* ── CARD 1: Boutique Address & Visiting Hours ── */}
           <div
@@ -150,6 +151,7 @@ export function BoutiqueAddressShowcase() {
                 marginTop: 28,
                 paddingTop: 18,
                 borderTop: "1px solid rgba(255, 255, 255, 0.06)",
+                flexWrap: "wrap",
               }}
             >
               <a
@@ -264,6 +266,7 @@ export function BoutiqueAddressShowcase() {
                 marginTop: 28,
                 paddingTop: 18,
                 borderTop: "1px solid rgba(255, 255, 255, 0.06)",
+                flexWrap: "wrap",
               }}
             >
               <a

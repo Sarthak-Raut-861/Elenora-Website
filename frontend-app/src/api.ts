@@ -38,9 +38,12 @@ export const REFRESH_KEY = 'asset_tracking_refresh_token'
 export function resolveMediaUrl(url: string | null | undefined): string {
   if (!url) return ''
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) return url
-  const base = API_BASE_URL.replace(/\/api\/?$/, '')
-  const cleanPath = url.startsWith('/') ? url : `/${url}`
-  return `${base}${cleanPath}`
+  if (url.startsWith('/uploads/')) {
+    const base = API_BASE_URL.replace(/\/api\/?$/, '')
+    return `${base}${url}`
+  }
+  // If it's a frontend static asset (e.g. /royal-bridal-banner.jpg or /elanora-logo.png), return as-is
+  return url
 }
 
 function normalizeAsset(asset: Asset): Asset {

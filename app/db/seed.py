@@ -393,6 +393,12 @@ async def seed_core_catalog_if_empty():
             "Royal Banarasi Sarees",
             "Cocktail Tuxedos",
             "Artisanal Jewellery",
+            "Abayas",
+            "Hijabs",
+            "Jwellery",
+            "Kurtis",
+            "Rental Collection",
+            "Western Wear",
         ]
         
         for cname in default_categories:
@@ -403,6 +409,13 @@ async def seed_core_catalog_if_empty():
                 await db.commit()
                 await db.refresh(cat)
                 cat_map[key] = cat.id
+
+        # Auto-heal any broken image URLs from previous runs
+        broken_res = await db.execute(select(Asset).where(Asset.asset_code == "BRL-PALACE-101"))
+        palace_asset = broken_res.scalars().first()
+        if palace_asset and (not palace_asset.image_url or palace_asset.image_url.startswith("/royal-bridal-banner")):
+            palace_asset.image_url = "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80"
+            await db.commit()
 
         res_assets = await db.execute(select(Asset))
         assets_list = res_assets.scalars().all()
@@ -418,7 +431,7 @@ async def seed_core_catalog_if_empty():
                     "name": "The Crimson Empress Zardozi Lehenga",
                     "asset_code": "CRIMSON-EMP-001",
                     "description": "Handcrafted silk velvet lehenga with antique gold zardozi and semi-precious stone embellishments.",
-                    "image_url": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80",
+                    "image_url": "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=800&q=80",
                     "category_id": bridal_id,
                     "buy_price": 52000.0,
                     "rental_price": 3899.0,
@@ -428,7 +441,7 @@ async def seed_core_catalog_if_empty():
                     "name": "Burgundy Velvet Royal Palace Bridal Lehenga",
                     "asset_code": "BRL-PALACE-101",
                     "description": "Imperial burgundy micro-velvet bridal lehenga adorned with intricate zardozi, dabka, and pearl hand-embroidery.",
-                    "image_url": "/royal-bridal-banner.jpg",
+                    "image_url": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80",
                     "category_id": bridal_id,
                     "buy_price": 58000.0,
                     "rental_price": 4499.0,

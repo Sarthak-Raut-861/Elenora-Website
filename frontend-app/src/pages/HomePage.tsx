@@ -83,37 +83,50 @@ const SHOP_THE_LOOK_ITEMS = [
   },
 ];
 
-// ── Visual Categories ("Collections" on Rozina) ──
-const EDITORIAL_COLLECTIONS = [
-  {
-    name: "Haute Couture Lehengas",
-    subtitle: "Bridal & Sangeet Masterpieces",
-    count: "50+ Vault Items",
-    image: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=900&q=80",
-    to: "/assets?category=Haute+Couture+Lehengas",
-  },
-  {
-    name: "Saris & Draped Sets",
-    subtitle: "Banarasi, Chiffon & Pre-Stitched",
-    count: "35+ Vault Items",
-    image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=900&q=80",
-    to: "/assets?category=Royal+Banarasi+Sarees",
-  },
-  {
-    name: "Designer Gowns & Long Tails",
-    subtitle: "Red Carpet & Cocktail Statements",
-    count: "28+ Vault Items",
-    image: "https://images.unsplash.com/photo-1594552072238-b8a33785b261?auto=format&fit=crop&w=900&q=80",
-    to: "/assets?category=Bridal+Gowns",
-  },
-  {
-    name: "Heritage Sherwanis & Kurtas",
-    subtitle: "Regal Raw Silk & Signature Zardozi",
-    count: "40+ Vault Items",
-    image: "https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=900&q=80",
-    to: "/assets?category=Heritage+Sherwanis",
-  },
-];
+// ── Dynamic Category Metadata & Editorial Imagery ──
+interface CollectionCardItem {
+  id?: number;
+  name: string;
+  subtitle: string;
+  count: string;
+  image: string;
+  to: string;
+}
+
+const getCategoryEditorialMeta = (name: string, index: number) => {
+  const n = name.toLowerCase();
+  if (n.includes("bridal") || n.includes("wedding") || n.includes("lehenga")) {
+    return {
+      subtitle: "Grand Ceremonies & Royal Wedding Silhouettes",
+      image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=900&q=80",
+    };
+  }
+  if (n.includes("party") || n.includes("cocktail") || n.includes("evening") || n.includes("festive")) {
+    return {
+      subtitle: "Cocktail Nights, Galas & Festive Celebrations",
+      image: "https://images.unsplash.com/photo-1566737236500-c8ac43014a67?auto=format&fit=crop&w=900&q=80",
+    };
+  }
+  if (n.includes("casual") || n.includes("chic") || n.includes("fusion") || n.includes("daily") || n.includes("coord")) {
+    return {
+      subtitle: "Effortless Everyday Elegance & Modern Fusion Sets",
+      image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=900&q=80",
+    };
+  }
+  if (n.includes("jen") || n.includes("jean") || n.includes("men") || n.includes("sherwani") || n.includes("kurta")) {
+    return {
+      subtitle: "Sharp Contemporary Tailoring & Regal Silhouettes",
+      image: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?auto=format&fit=crop&w=900&q=80",
+    };
+  }
+  const defaultMeta = [
+    { subtitle: "Handcrafted Luxury Silhouettes & Royal Coutures", image: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=900&q=80" },
+    { subtitle: "Artisanal Heritage Weaves & Contemporary Drapes", image: "https://images.unsplash.com/photo-1594552072238-b8a33785b261?auto=format&fit=crop&w=900&q=80" },
+    { subtitle: "Bespoke Evening Ensembles & Red Carpet Statements", image: "https://images.unsplash.com/photo-1518049362265-d5b2a6467637?auto=format&fit=crop&w=900&q=80" },
+    { subtitle: "Timeless Festive Splendor & Signature Embroidery", image: "https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=900&q=80" },
+  ];
+  return defaultMeta[index % defaultMeta.length];
+};
 
 export function HomePage() {
   const navigate = useNavigate();
@@ -204,95 +217,36 @@ export function HomePage() {
   }, [bridalAssetsPool, uniqueAssets]);
 
   // Pick 4 random collection categories from our database once per page load
-  const randomCollectionCategories = useMemo(() => {
+  // Pick up to 4 random collection categories dynamically from database categories
+  const randomCollectionCategories = useMemo<CollectionCardItem[]>(() => {
     if (!categories || categories.length === 0) {
-      return EDITORIAL_COLLECTIONS;
+      return [];
     }
 
-    const fallbackImages: Record<string, { image: string; subtitle: string }> = {
-      lehenga: {
-        image: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=900&q=80",
-        subtitle: "Bridal & Sangeet Masterpieces",
-      },
-      saree: {
-        image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=900&q=80",
-        subtitle: "Banarasi, Chiffon & Pre-Stitched",
-      },
-      gown: {
-        image: "https://images.unsplash.com/photo-1594552072238-b8a33785b261?auto=format&fit=crop&w=900&q=80",
-        subtitle: "Red Carpet & Cocktail Statements",
-      },
-      sherwani: {
-        image: "https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=900&q=80",
-        subtitle: "Regal Raw Silk & Signature Zardozi",
-      },
-    };
-
-    // Shuffle available categories
+    // Shuffle available user-created categories
     const shuffledCats = [...categories].sort(() => 0.5 - Math.random());
     const pickedCats = shuffledCats.slice(0, 4);
 
-    interface CollectionCardItem {
-      id?: number;
-      name: string;
-      subtitle: string;
-      count: string;
-      image: string;
-      to: string;
-    }
-
-    const mapped: CollectionCardItem[] = pickedCats.map((cat, idx) => {
+    return pickedCats.map((cat, idx) => {
       // Find real assets belonging to this category
       const catAssets = uniqueAssets.filter((a) => a.category_id === cat.id);
       const assetWithImage = catAssets.find((a) => a.image_url && a.image_url.trim().length > 0);
-      const catLower = cat.name.toLowerCase();
+      const meta = getCategoryEditorialMeta(cat.name, idx);
 
-      let fallbackImg = "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=900&q=80";
-      let subtitle = "Handcrafted Royal Silhouettes & Coutures";
-
-      if (catLower.includes("lehenga") || catLower.includes("bridal")) {
-        fallbackImg = fallbackImages.lehenga.image;
-        subtitle = "Bridal & Sangeet Masterpieces";
-      } else if (catLower.includes("sari") || catLower.includes("saree") || catLower.includes("drape")) {
-        fallbackImg = fallbackImages.saree.image;
-        subtitle = "Banarasi, Chiffon & Pre-Stitched";
-      } else if (catLower.includes("gown") || catLower.includes("dress") || catLower.includes("tail")) {
-        fallbackImg = fallbackImages.gown.image;
-        subtitle = "Red Carpet & Cocktail Statements";
-      } else if (catLower.includes("sherwani") || catLower.includes("kurta") || catLower.includes("men")) {
-        fallbackImg = fallbackImages.sherwani.image;
-        subtitle = "Regal Raw Silk & Signature Zardozi";
-      } else {
-        const fbs = Object.values(fallbackImages);
-        const fb = fbs[idx % fbs.length];
-        fallbackImg = fb.image;
-        subtitle = fb.subtitle;
-      }
-
-      const imageUrl = assetWithImage?.image_url || fallbackImg;
-      const countLabel = catAssets.length > 0 ? `${catAssets.length}+ Vault Items` : "Curated Archive";
+      const imageUrl = assetWithImage?.image_url || meta.image;
+      const countLabel = catAssets.length > 0
+        ? `${catAssets.length} ${catAssets.length === 1 ? "Vault Piece" : "Vault Pieces"}`
+        : "Curated Collection";
 
       return {
         id: cat.id,
         name: cat.name,
-        subtitle,
+        subtitle: meta.subtitle,
         count: countLabel,
         image: imageUrl,
         to: `/assets?category=${encodeURIComponent(cat.name)}`,
       };
     });
-
-    // If fewer than 4 categories exist in database, supplement with curated placeholders
-    if (mapped.length < 4) {
-      const remainingNeeded = 4 - mapped.length;
-      const usedNames = new Set(mapped.map((m) => m.name.toLowerCase()));
-      const availableFillers = EDITORIAL_COLLECTIONS.filter((c) => !usedNames.has(c.name.toLowerCase()));
-      for (let i = 0; i < remainingNeeded && i < availableFillers.length; i++) {
-        mapped.push(availableFillers[i]);
-      }
-    }
-
-    return mapped;
   }, [categories, uniqueAssets]);
 
   const slide = HERO_SLIDES[currentSlide];
@@ -1210,58 +1164,60 @@ export function HomePage() {
             </p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
-            {randomCollectionCategories.map((col, idx) => (
-              <motion.div
-                key={col.name + idx}
-                whileHover={{ y: -6 }}
-                transition={{ duration: 0.25 }}
-                onClick={() => navigate(col.to)}
-                style={{
-                  position: "relative",
-                  borderRadius: 12,
-                  overflow: "hidden",
-                  aspectRatio: "3 / 4",
-                  background: "#181818",
-                  cursor: "pointer",
-                  border: "1px solid rgba(201,163,74,0.25)",
-                  boxShadow: "0 14px 40px rgba(0,0,0,0.7)",
-                }}
-              >
-                <img
-                  src={col.image}
-                  alt={col.name}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.6s ease" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.08)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-                />
-                <div
+          {randomCollectionCategories.length > 0 ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
+              {randomCollectionCategories.map((col, idx) => (
+                <motion.div
+                  key={col.name + idx}
+                  whileHover={{ y: -6 }}
+                  transition={{ duration: 0.25 }}
+                  onClick={() => navigate(col.to)}
                   style={{
-                    position: "absolute",
-                    inset: 0,
-                    background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.3) 50%, transparent 80%)",
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "flex-end",
-                    padding: 24,
+                    position: "relative",
+                    borderRadius: 12,
+                    overflow: "hidden",
+                    aspectRatio: "3 / 4",
+                    background: "#181818",
+                    cursor: "pointer",
+                    border: "1px solid rgba(201,163,74,0.25)",
+                    boxShadow: "0 14px 40px rgba(0,0,0,0.7)",
                   }}
                 >
-                  <span style={{ fontSize: "0.68rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.14em", fontWeight: 700, marginBottom: 4 }}>
-                    {col.count}
-                  </span>
-                  <h3 style={{ fontFamily: "var(--font-brand)", fontSize: "1.35rem", color: "#FFFFFF", margin: "0 0 4px", fontWeight: 600 }}>
-                    {col.name}
-                  </h3>
-                  <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.75)", margin: "0 0 12px" }}>
-                    {col.subtitle}
-                  </p>
-                  <span style={{ fontSize: "0.74rem", color: "#C9A34A", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700 }}>
-                    Discover Collection →
-                  </span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                  <img
+                    src={col.image}
+                    alt={col.name}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.6s ease" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.08)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background: "linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.3) 50%, transparent 80%)",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "flex-end",
+                      padding: 24,
+                    }}
+                  >
+                    <span style={{ fontSize: "0.68rem", color: "#C9A34A", textTransform: "uppercase", letterSpacing: "0.14em", fontWeight: 700, marginBottom: 4 }}>
+                      {col.count}
+                    </span>
+                    <h3 style={{ fontFamily: "var(--font-brand)", fontSize: "1.35rem", color: "#FFFFFF", margin: "0 0 4px", fontWeight: 600 }}>
+                      {col.name}
+                    </h3>
+                    <p style={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.75)", margin: "0 0 12px" }}>
+                      {col.subtitle}
+                    </p>
+                    <span style={{ fontSize: "0.74rem", color: "#C9A34A", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 700 }}>
+                      Discover Collection →
+                    </span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : null}
 
         </div>
       </section>

@@ -6,6 +6,13 @@ import re
 import os
 import uuid
 import shutil
+import io
+
+try:
+    from PIL import Image, ImageOps
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
 
 from app.utils.asset_utils import generate_asset_code
 from app.core.dependencies import get_current_user, get_current_user_optional
@@ -20,60 +27,209 @@ from app.schemas.asset import AssetCreate, AssetUpdate, AssetResponse, AssetStoc
 
 router = APIRouter(prefix="/assets", tags=["assets"])
 
+# Standardized uploads folder (ensures consistency between local, container, and cloud environments)
+UPLOAD_DIR = "/tmp/uploads" if os.getenv("VERCEL") else os.path.join(os.getcwd(), "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+def detect_image_extension(content_type: str | None, filename: str | None, contents: bytes) -> str | None:
+    """Detect image extension supporting all standard formats (JPG, PNG, WEBP, AVIF, HEIC, GIF, BMP, SVG, TIFF, ICO)."""
+    # 1. Direct MIME type mapping
+    ct = (content_type or "").lower().strip()
+    mime_map = {
+        # JPEG
+        "image/jpeg": ".jpg",
+        "image/jpg": ".jpg",
+        "image/pjpeg": ".jpg",
+        "image/jfif": ".jpg",
+        # PNG
+        "image/png": ".png",
+        "image/x-png": ".png",
+        # WEBP
+        "image/webp": ".webp",
+        # AVIF
+        "image/avif": ".avif",
+        # HEIC / HEIF (Apple iPhone photos)
+        "image/heic": ".heic",
+        "image/heif": ".heif",
+        "image/heic-sequence": ".heic",
+        "image/heif-sequence": ".heif",
+        # GIF
+        "image/gif": ".gif",
+        # BMP
+        "image/bmp": ".bmp",
+        "image/x-ms-bmp": ".bmp",
+        # TIFF
+        "image/tiff": ".tiff",
+        "image/x-tiff": ".tiff",
+        # SVG
+        "image/svg+xml": ".svg",
+        "image/svg": ".svg",
+        # ICO
+        "image/x-icon": ".ico",
+        "image/vnd.microsoft.icon": ".ico",
+        "image/ico": ".ico",
+    }
+    if ct in mime_map:
+        return mime_map[ct]
+
+    # 2. Filename extension fallback
+    if filename:
+        _, ext = os.path.splitext(filename.lower())
+        ext_map = {
+            ".jpg": ".jpg", ".jpeg": ".jpg", ".jfif": ".jpg", ".jpe": ".jpg",
+            ".png": ".png",
+            ".webp": ".webp",
+            ".avif": ".avif",
+            ".heic": ".heic", ".heif": ".heif",
+            ".gif": ".gif",
+            ".bmp": ".bmp",
+            ".tiff": ".tiff", ".tif": ".tiff",
+            ".svg": ".svg",
+            ".ico": ".ico",
+        }
+        if ext in ext_map:
+            return ext_map[ext]
+
+    # 3. Magic bytes / header inspection fallback
+    if len(contents) >= 4:
+        # JPEG: FF D8 FF
+        if contents[:3] == b"\xff\xd8\xff":
+            return ".jpg"
+        # PNG: 89 50 4E 47 0D 0A 1A 0A
+        if contents[:8] == b"\x89PNG\r\n\x1a\n":
+            return ".png"
+        # GIF: GIF87a or GIF89a
+        if contents[:6] in (b"GIF87a", b"GIF89a"):
+            return ".gif"
+        # WEBP: RIFF....WEBP
+        if len(contents) >= 12 and contents[:4] == b"RIFF" and contents[8:12] == b"WEBP":
+            return ".webp"
+        # BMP: BM
+        if contents[:2] == b"BM":
+            return ".bmp"
+        # TIFF: II*\x00 or MM\x00*
+        if contents[:4] in (b"II*\x00", b"MM\x00*"):
+            return ".tiff"
+        # SVG / XML text
+        header_text = contents[:250].lstrip().lower()
+        if header_text.startswith(b"<?xml") or header_text.startswith(b"<svg") or b"<svg" in header_text:
+            return ".svg"
+        # HEIC / AVIF ftyp box
+        if len(contents) >= 12 and contents[4:8] == b"ftyp":
+            ftyp_brand = contents[8:12].lower()
+            if ftyp_brand in (b"avif", b"avis"):
+                return ".avif"
+            if ftyp_brand in (b"heic", b"heix", b"hevc", b"heim", b"heis", b"heif", b"mif1", b"msf1"):
+                return ".heic"
+
+    # 4. Fallback for any image/* MIME subtype
+    if ct.startswith("image/"):
+        subtype = ct.split("/", 1)[1].split(";")[0].strip()
+        subtype = re.sub(r"[^a-zA-Z0-9]", "", subtype)
+        if subtype:
+            return f".{subtype}"
+
+    return None
+
 
 # POST /assets/upload-images - admin/staff uploads multiple image files at once
 @router.post("/upload-images")
-@limiter.limit("20/minute")
+@limiter.limit("120/minute")
 async def upload_multiple_asset_images(
     request: Request,
     files: list[UploadFile] = File(...),
     current_user: User = Depends(require_roles([UserRole.admin, UserRole.staff]))
 ):
-    allowed_types = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
-    uploads_dir = os.path.join(os.getcwd(), "uploads")
-    os.makedirs(uploads_dir, exist_ok=True)
+    if not files:
+        raise HTTPException(status_code=400, detail="No files provided for upload")
 
     uploaded_urls = []
-    for file in files:
-        if not file.content_type or file.content_type.lower() not in allowed_types:
-            continue
-        contents = await file.read()
-        if len(contents) > 12 * 1024 * 1024:
-            continue
-        ext = allowed_types[file.content_type.lower()]
-        filename = f"{uuid.uuid4().hex}{ext}"
-        filepath = os.path.join(uploads_dir, filename)
-        with open(filepath, "wb") as buffer:
-            buffer.write(contents)
-        uploaded_urls.append(f"/uploads/{filename}")
+    skipped_files = []
 
-    return {"image_urls": uploaded_urls}
+    for file in files:
+        try:
+            contents = await file.read()
+            if not contents:
+                continue
+
+            if len(contents) > 35 * 1024 * 1024:
+                skipped_files.append(f"{file.filename or 'file'} (>35MB)")
+                continue
+
+            ext = detect_image_extension(file.content_type, file.filename, contents)
+            if not ext:
+                skipped_files.append(f"{file.filename or 'file'} (unsupported image format)")
+                continue
+
+            filename = f"{uuid.uuid4().hex}{ext}"
+            filepath = os.path.join(UPLOAD_DIR, filename)
+
+            saved = False
+            if HAS_PIL and ext not in (".svg", ".heic", ".heif", ".ico"):
+                try:
+                    with Image.open(io.BytesIO(contents)) as img:
+                        img = ImageOps.exif_transpose(img)
+                        img.save(filepath)
+                        saved = True
+                except Exception:
+                    saved = False
+
+            if not saved:
+                with open(filepath, "wb") as buffer:
+                    buffer.write(contents)
+
+            uploaded_urls.append(f"/uploads/{filename}")
+        except Exception as e:
+            skipped_files.append(f"{file.filename or 'file'} ({str(e)})")
+
+    if not uploaded_urls and skipped_files:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Could not upload image(s): {', '.join(skipped_files)}. Supported formats: JPG, PNG, WEBP, AVIF, HEIC, GIF, BMP, SVG, TIFF."
+        )
+
+    return {"image_urls": uploaded_urls, "skipped": skipped_files}
 
 
 # POST /assets/upload-image - admin uploads an image file
 @router.post("/upload-image")
-@limiter.limit("20/minute")
+@limiter.limit("120/minute")
 async def upload_asset_image(
     request: Request,
     file: UploadFile = File(...),
     current_user: User = Depends(require_roles([UserRole.admin, UserRole.staff]))
 ):
-    allowed_types = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
-    if not file.content_type or file.content_type.lower() not in allowed_types:
-        raise HTTPException(status_code=400, detail="Uploaded file must be a PNG, JPG, or WEBP image")
-
     contents = await file.read()
-    if len(contents) > 10 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Image file size cannot exceed 10 MB")
+    if not contents:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty")
 
-    uploads_dir = os.path.join(os.getcwd(), "uploads")
-    os.makedirs(uploads_dir, exist_ok=True)
-    ext = allowed_types[file.content_type.lower()]
+    if len(contents) > 35 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image file size cannot exceed 35 MB")
+
+    ext = detect_image_extension(file.content_type, file.filename, contents)
+    if not ext:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported file format. Please upload an image file (JPG, PNG, WEBP, AVIF, HEIC, GIF, BMP, SVG, TIFF)."
+        )
+
     filename = f"{uuid.uuid4().hex}{ext}"
-    filepath = os.path.join(uploads_dir, filename)
+    filepath = os.path.join(UPLOAD_DIR, filename)
 
-    with open(filepath, "wb") as buffer:
-        buffer.write(contents)
+    saved = False
+    if HAS_PIL and ext not in (".svg", ".heic", ".heif", ".ico"):
+        try:
+            with Image.open(io.BytesIO(contents)) as img:
+                img = ImageOps.exif_transpose(img)
+                img.save(filepath)
+                saved = True
+        except Exception:
+            saved = False
+
+    if not saved:
+        with open(filepath, "wb") as buffer:
+            buffer.write(contents)
 
     return {"image_url": f"/uploads/{filename}"}
 

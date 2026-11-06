@@ -241,26 +241,19 @@ export function AdminAssetsPage() {
     if (!file) return;
     setUploadingImage(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch(`${api.baseUrl}/assets/upload-image`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      });
-      if (!res.ok) throw new Error("Upload failed");
-      const data = await res.json();
+      const url = await api.uploadSingleImage(token!, file);
       if (variantIndex !== undefined) {
         const updated = [...formVariants];
-        updated[variantIndex].image_url = data.image_url;
+        updated[variantIndex].image_url = url;
         setFormVariants(updated);
       } else {
-        setFormImage(data.image_url);
+        setFormImage(url);
       }
-    } catch {
-      alert("Image upload failed. You can paste a direct image URL instead.");
+    } catch (err: any) {
+      alert(err?.message || "Image upload failed. You can paste a direct image URL instead.");
     } finally {
       setUploadingImage(false);
+      e.target.value = "";
     }
   };
 
@@ -279,9 +272,11 @@ export function AdminAssetsPage() {
           if (!formImage && updated.length > 0) setFormImage(updated[0]);
           return updated;
         });
+      } else {
+        alert("No valid images could be uploaded. Please verify files are under 35 MB.");
       }
-    } catch {
-      alert("Failed to upload images. Check that files are PNG, JPG or WEBP.");
+    } catch (err: any) {
+      alert(err?.message || "Failed to upload images. Please check that files are valid images (JPG, PNG, WEBP, AVIF, HEIC, GIF, BMP, SVG, TIFF).");
     } finally {
       setUploadingGallery(false);
       e.target.value = "";
@@ -330,8 +325,8 @@ export function AdminAssetsPage() {
       updated[variantIndex].image_url = url;
       setFormVariants(updated);
       setFormGalleryImages((prev) => prev.includes(url) ? prev : [...prev, url]);
-    } catch {
-      alert("Failed to upload shade image.");
+    } catch (err: any) {
+      alert(err?.message || "Failed to upload shade image.");
     } finally {
       setUploadingShadeIdx(null);
       e.target.value = "";
@@ -1871,7 +1866,7 @@ export function AdminAssetsPage() {
                       <input
                         type="file"
                         multiple
-                        accept="image/*"
+                        accept="image/*,.heic,.heif,.avif,.webp,.png,.jpg,.jpeg,.gif,.bmp,.tiff,.tif,.svg,.ico"
                         onChange={handleMultipleGalleryUpload}
                         disabled={uploadingGallery}
                         style={{ display: "none" }}
@@ -2307,7 +2302,7 @@ export function AdminAssetsPage() {
                               {uploadingShadeIdx === idx ? "Uploading..." : "Upload Photo for Shade"}
                               <input
                                 type="file"
-                                accept="image/*"
+                                accept="image/*,.heic,.heif,.avif,.webp,.png,.jpg,.jpeg,.gif,.bmp,.tiff,.tif,.svg,.ico"
                                 onChange={(e) => handleShadeFileUpload(e, idx)}
                                 disabled={uploadingShadeIdx === idx}
                                 style={{ display: "none" }}

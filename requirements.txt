@@ -26,3 +26,5 @@ python-multipart
 alembic
 slowapi
 aiosqlite
+
+Pillow

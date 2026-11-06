@@ -37,7 +37,7 @@ export const REFRESH_KEY = 'asset_tracking_refresh_token'
 
 export function resolveMediaUrl(url: string | null | undefined): string {
   if (!url) return ''
-  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) return url
   const base = API_BASE_URL.replace(/\/api\/?$/, '')
   const cleanPath = url.startsWith('/') ? url : `/${url}`
   return `${base}${cleanPath}`
@@ -388,7 +388,18 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
       body: formData,
     })
-    if (!res.ok) throw new Error('Failed to upload images')
+    if (!res.ok) {
+      let errMsg = 'Failed to upload images'
+      try {
+        const errData = await res.json()
+        if (errData?.detail) {
+          errMsg = typeof errData.detail === 'string' ? errData.detail : JSON.stringify(errData.detail)
+        }
+      } catch {
+        // fallback
+      }
+      throw new Error(errMsg)
+    }
     const data = await res.json()
     return (data.image_urls || []).map((u: string) => resolveMediaUrl(u))
   },
@@ -401,7 +412,18 @@ export const api = {
       headers: { Authorization: `Bearer ${token}` },
       body: formData,
     })
-    if (!res.ok) throw new Error('Failed to upload image')
+    if (!res.ok) {
+      let errMsg = 'Failed to upload image'
+      try {
+        const errData = await res.json()
+        if (errData?.detail) {
+          errMsg = typeof errData.detail === 'string' ? errData.detail : JSON.stringify(errData.detail)
+        }
+      } catch {
+        // fallback
+      }
+      throw new Error(errMsg)
+    }
     const data = await res.json()
     return resolveMediaUrl(data.image_url)
   },

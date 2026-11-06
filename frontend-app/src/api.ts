@@ -185,6 +185,16 @@ export const api = {
     request<LoginResponse>('/auth/login', { method: 'POST', body: payload }),
   register: (payload: RegisterPayload) =>
     request<User>('/auth/register', { method: 'POST', body: payload }),
+  sendOtp: (phone: string, email?: string) =>
+    request<{ message: string; phone: string; expires_in_seconds: number; dev_otp?: string }>(
+      '/auth/send-otp',
+      { method: 'POST', body: { phone, email } }
+    ),
+  verifyOtp: (phone: string, otp: string) =>
+    request<{ verified: boolean; message: string }>(
+      '/auth/verify-otp',
+      { method: 'POST', body: { phone, otp } }
+    ),
   logout: (token: string | null) => request<{ detail: string }>('/auth/logout', { method: 'POST', token }),
   refresh: () => {
     const storedRefresh = localStorage.getItem('asset_tracking_refresh_token')
@@ -332,6 +342,8 @@ export const api = {
     request<User>(`/users/${userId}/role`, { method: 'PATCH', token, body: { role } }),
   setUserActive: (token: string, userId: number, is_active: boolean) =>
     request<User>(`/users/${userId}/activate`, { method: 'PATCH', token, body: { is_active } }),
+  deleteUser: (token: string, userId: number) =>
+    request<{ message: string; id: number }>(`/users/${userId}`, { method: 'DELETE', token }),
   getUserHistory: (token: string, userId: number) =>
     request<UserHistoryResponse>(`/users/${userId}/history`, { token }),
 

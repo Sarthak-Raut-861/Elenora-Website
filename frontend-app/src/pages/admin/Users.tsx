@@ -24,18 +24,21 @@ import {
   RotateCcw,
   Briefcase,
   User as UserIcon,
+  Trash2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../../api";
 import { useAuth } from "../../auth-context";
 import type { User, UserHistoryResponse, Role } from "../../types";
 
-const SUPER_ADMIN_EMAIL = "admin@elanora-luxury.com";
+const ROOT_SYSTEM_EMAIL = "admin@elanora-luxury.com";
 
-const isSuperAdmin = (u: User | { email?: string; id?: number } | null | undefined): boolean => {
+const isRootSystemAdmin = (u: User | { email?: string; id?: number } | null | undefined): boolean => {
   if (!u) return false;
-  return u.email?.toLowerCase() === SUPER_ADMIN_EMAIL || u.id === 1;
+  return u.email?.toLowerCase() === ROOT_SYSTEM_EMAIL || u.id === 1;
 };
+
+const isSuperAdmin = isRootSystemAdmin;
 
 export function AdminUsersPage() {
   const { token, user: currentUser } = useAuth();
@@ -54,6 +57,7 @@ export function AdminUsersPage() {
   const [roleModalUser, setRoleModalUser] = useState<User | null>(null);
   const [selectedNewRole, setSelectedNewRole] = useState<"user" | "staff" | "admin">("user");
   const [toggleActiveUser, setToggleActiveUser] = useState<User | null>(null);
+  const [deleteModalUser, setDeleteModalUser] = useState<User | null>(null);
   const [selectedUserHistory, setSelectedUserHistory] = useState<UserHistoryResponse | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -104,6 +108,19 @@ export function AdminUsersPage() {
     },
     onError: (err: any) => {
       showFeedback("error", err?.message || "Failed to alter account status");
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (userId: number) => api.deleteUser(token!, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      const name = deleteModalUser?.full_name || "Account";
+      setDeleteModalUser(null);
+      showFeedback("success", `${name} permanently deleted from directory.`);
+    },
+    onError: (err: any) => {
+      showFeedback("error", err?.message || "Failed to delete user account.");
     },
   });
 
@@ -170,8 +187,12 @@ export function AdminUsersPage() {
   }, [users, activeTab, statusFilter, searchTerm]);
 
   const handleOpenRoleModal = (u: User) => {
-    if (isSuperAdmin(u)) {
-      showFeedback("error", "Security Lock: Master Super Administrator role cannot be altered.");
+    if (isRootSystemAdmin(u)) {
+      showFeedback("error", "Security Lock: The root System Concierge role cannot be altered.");
+      return;
+    }
+    if (u.id === currentUser?.id) {
+      showFeedback("error", "You cannot alter your own administrative role.");
       return;
     }
     setRoleModalUser(u);
@@ -185,8 +206,12 @@ export function AdminUsersPage() {
   };
 
   const handleOpenActiveModal = (u: User) => {
-    if (isSuperAdmin(u)) {
-      showFeedback("error", "Security Lock: Master Super Administrator account cannot be deactivated.");
+    if (isRootSystemAdmin(u)) {
+      showFeedback("error", "Security Lock: The root System Concierge account cannot be deactivated.");
+      return;
+    }
+    if (u.id === currentUser?.id) {
+      showFeedback("error", "You cannot deactivate your own administrative account.");
       return;
     }
     setToggleActiveUser(u);
@@ -195,6 +220,18 @@ export function AdminUsersPage() {
   const handleConfirmActiveToggle = () => {
     if (!toggleActiveUser) return;
     setActiveMutation.mutate({ userId: toggleActiveUser.id, isActive: !toggleActiveUser.is_active });
+  };
+
+  const handleOpenDeleteModal = (u: User) => {
+    if (isRootSystemAdmin(u)) {
+      showFeedback("error", "Security Lock: The root System Concierge account cannot be deleted.");
+      return;
+    }
+    if (u.id === currentUser?.id) {
+      showFeedback("error", "You cannot delete your own administrative account while logged in.");
+      return;
+    }
+    setDeleteModalUser(u);
   };
 
   const handleOnboardSubmit = (e: React.FormEvent) => {
@@ -807,10 +844,10 @@ export function AdminUsersPage() {
                         {isAdmin ? (
                           isSuper ? (
                             <>
-                              {/* Locked Role button for Super Admin */}
+                              {/* Locked Role button for Root Concierge */}
                               <button
                                 disabled
-                                title="Master Super Administrator role is cryptographically protected and cannot be altered."
+                                title="Root System Concierge is permanently protected and cannot be altered."
                                 style={{
                                   display: "inline-flex",
                                   alignItems: "center",
@@ -826,13 +863,12 @@ export function AdminUsersPage() {
                                 }}
                               >
                                 <Lock size={11} color="#C9A34A" />
-                                <span>Role Locked</span>
+                                <span>Root Protected</span>
                               </button>
 
-                              {/* Locked Deactivate button for Super Admin */}
                               <button
                                 disabled
-                                title="Master Super Administrator account cannot be deactivated by any admin."
+                                title="Root System Concierge account cannot be deactivated or deleted."
                                 style={{
                                   display: "inline-flex",
                                   alignItems: "center",
@@ -851,11 +887,30 @@ export function AdminUsersPage() {
                                 <span>Immutable</span>
                               </button>
                             </>
+                          ) : isMe ? (
+                            <span
+                              title="Your active session. To change roles or delete, use another administrator account."
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 4,
+                                padding: "6px 10px",
+                                borderRadius: 6,
+                                fontSize: "0.74rem",
+                                color: "#C9A34A",
+                                background: "rgba(201, 163, 74, 0.08)",
+                                border: "1px solid rgba(201, 163, 74, 0.2)",
+                              }}
+                            >
+                              <Crown size={12} color="#C9A34A" />
+                              <span>Current Session (You)</span>
+                            </span>
                           ) : (
                             <>
                               {/* Change Role Button */}
                               <button
                                 onClick={() => handleOpenRoleModal(u)}
+                                title="Assign access level (Client Patron, Atelier Staff, System Administrator)"
                                 style={{
                                   display: "inline-flex",
                                   alignItems: "center",
@@ -879,6 +934,7 @@ export function AdminUsersPage() {
                               {/* Toggle Active Button */}
                               <button
                                 onClick={() => handleOpenActiveModal(u)}
+                                title={u.is_active ? "Deactivate account" : "Reactivate account"}
                                 style={{
                                   display: "inline-flex",
                                   alignItems: "center",
@@ -894,6 +950,37 @@ export function AdminUsersPage() {
                                 }}
                               >
                                 {u.is_active ? "Deactivate" : "Activate"}
+                              </button>
+
+                              {/* Delete Account Button */}
+                              <button
+                                onClick={() => handleOpenDeleteModal(u)}
+                                title="Permanently delete this user account"
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: 5,
+                                  padding: "6px 10px",
+                                  borderRadius: 6,
+                                  background: "rgba(239, 68, 68, 0.08)",
+                                  border: "1px solid rgba(239, 68, 68, 0.25)",
+                                  color: "#EF4444",
+                                  fontSize: "0.74rem",
+                                  cursor: "pointer",
+                                  fontWeight: 500,
+                                  transition: "all 0.15s ease",
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)";
+                                  e.currentTarget.style.borderColor = "#EF4444";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = "rgba(239, 68, 68, 0.08)";
+                                  e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.25)";
+                                }}
+                              >
+                                <Trash2 size={11} color="#EF4444" />
+                                <span>Delete</span>
                               </button>
                             </>
                           )
@@ -1419,6 +1506,118 @@ export function AdminUsersPage() {
                     : toggleActiveUser.is_active
                     ? "Confirm Suspension"
                     : "Confirm Reactivation"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── MODAL 5: PERMANENT DELETE CONFIRMATION (ADMIN ONLY) ── */}
+      <AnimatePresence>
+        {deleteModalUser && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.85)",
+              backdropFilter: "blur(6px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 900,
+              padding: 20,
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              style={{
+                background: "#141414",
+                border: "1px solid rgba(239, 68, 68, 0.4)",
+                borderRadius: 16,
+                maxWidth: 460,
+                width: "100%",
+                padding: "26px 30px",
+                boxShadow: "0 25px 60px rgba(0,0,0,0.85)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 10,
+                    background: "rgba(239, 68, 68, 0.15)",
+                    border: "1px solid rgba(239, 68, 68, 0.3)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Trash2 size={22} color="#EF4444" />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#FFFFFF", margin: 0 }}>
+                    Permanently Delete Account?
+                  </h3>
+                  <div style={{ fontSize: "0.78rem", color: "#EF4444", fontWeight: 600, marginTop: 2 }}>
+                    This action is completely irreversible
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ padding: "12px 14px", borderRadius: 8, background: "#1C1C1C", border: "1px solid rgba(255, 255, 255, 0.08)", marginBottom: 16 }}>
+                <div style={{ fontSize: "0.75rem", color: "#737373" }}>Target Account for Purge:</div>
+                <div style={{ fontWeight: 600, color: "#FFFFFF", fontSize: "0.92rem", marginTop: 2 }}>{deleteModalUser.full_name}</div>
+                <div style={{ fontSize: "0.78rem", color: "#A3A3A3" }}>{deleteModalUser.email}</div>
+                <div style={{ fontSize: "0.74rem", color: "#C9A34A", marginTop: 4 }}>Role: {deleteModalUser.role.toUpperCase()}</div>
+              </div>
+
+              <p style={{ color: "#A3A3A3", fontSize: "0.84rem", lineHeight: 1.5, marginBottom: 20 }}>
+                Deleting this account will permanently purge all authentication sessions, tokens, and access privileges. Any staff operational histories will be cleanly reassigned to your administrator ID to maintain database audit trails.
+              </p>
+
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => setDeleteModalUser(null)}
+                  disabled={deleteUserMutation.isPending}
+                  style={{
+                    padding: "9px 16px",
+                    borderRadius: 8,
+                    background: "transparent",
+                    border: "1px solid rgba(255, 255, 255, 0.15)",
+                    color: "#A3A3A3",
+                    fontSize: "0.82rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => deleteUserMutation.mutate(deleteModalUser.id)}
+                  disabled={deleteUserMutation.isPending}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "9px 20px",
+                    borderRadius: 8,
+                    background: "#DC2626",
+                    border: "none",
+                    color: "#FFFFFF",
+                    fontSize: "0.82rem",
+                    fontWeight: 700,
+                    cursor: deleteUserMutation.isPending ? "not-allowed" : "pointer",
+                    boxShadow: "0 4px 14px rgba(220, 38, 38, 0.4)",
+                  }}
+                >
+                  <Trash2 size={14} />
+                  <span>{deleteUserMutation.isPending ? "Purging..." : "Permanently Delete"}</span>
                 </button>
               </div>
             </motion.div>

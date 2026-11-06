@@ -1,4 +1,5 @@
-from datetime import datetime, timezone
+import secrets
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -20,12 +21,109 @@ from app.models.user import User, UserRole
 from app.schemas.auth import (
     AccessTokenResponse,
     ChangePassword,
+    SendOtpRequest,
+    SendOtpResponse,
     UserLogin,
     UserRegister,
     UserResponse,
+    VerifyOtpRequest,
+    VerifyOtpResponse,
 )
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+# In-memory OTP storage: normalized_phone -> { "otp": str, "expires_at": datetime, "last_sent_at": datetime, "verified": bool }
+OTP_STORE: dict[str, dict] = {}
+
+
+def clean_phone_number(phone: str) -> str:
+    cleaned = "".join(ch for ch in phone if ch.isdigit() or ch == "+")
+    return cleaned
+
+
+@router.post("/send-otp", response_model=SendOtpResponse)
+@limiter.limit("15/minute")
+async def send_otp(
+    request: Request,
+    data: SendOtpRequest
+):
+    phone = clean_phone_number(data.phone)
+    digits = "".join(ch for ch in phone if ch.isdigit())
+    if len(digits) < 10:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please provide a valid 10-digit mobile number."
+        )
+
+    now = datetime.now(timezone.utc)
+    if phone in OTP_STORE:
+        last_sent = OTP_STORE[phone].get("last_sent_at")
+        if last_sent and (now - last_sent).total_seconds() < 25:
+            remaining = int(25 - (now - last_sent).total_seconds())
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Please wait {remaining} seconds before requesting a new OTP."
+            )
+
+    # Generate a cryptographically secure 6-digit numeric OTP
+    otp_code = f"{secrets.randbelow(900000) + 100000}"
+    OTP_STORE[phone] = {
+        "otp": otp_code,
+        "expires_at": now + timedelta(minutes=5),
+        "last_sent_at": now,
+        "verified": False,
+    }
+    auth_logger.info(f"Verification OTP generated for {phone}: {otp_code}")
+
+    return SendOtpResponse(
+        message=f"A 6-digit verification code has been dispatched to {phone}",
+        phone=phone,
+        expires_in_seconds=300,
+        dev_otp=otp_code,
+    )
+
+
+@router.post("/verify-otp", response_model=VerifyOtpResponse)
+@limiter.limit("30/minute")
+async def verify_otp(
+    request: Request,
+    data: VerifyOtpRequest
+):
+    phone = clean_phone_number(data.phone)
+    now = datetime.now(timezone.utc)
+    record = OTP_STORE.get(phone)
+    provided_code = data.otp.strip()
+
+    # Master dev/test code
+    if provided_code == "123456":
+        OTP_STORE[phone] = {
+            "otp": "123456",
+            "expires_at": now + timedelta(minutes=10),
+            "last_sent_at": now,
+            "verified": True,
+        }
+        return VerifyOtpResponse(verified=True, message="Mobile number verified successfully.")
+
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No active OTP found for this mobile number. Please request a new code."
+        )
+
+    if now > record["expires_at"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The verification code has expired. Please request a fresh OTP."
+        )
+
+    if record["otp"] != provided_code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect 6-digit verification code. Please check and try again."
+        )
+
+    record["verified"] = True
+    return VerifyOtpResponse(verified=True, message="Mobile number verified successfully.")
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -45,20 +143,22 @@ async def register(
         auth_logger.warning(f"Registration failed: Email already registered {clean_email}")
         raise HTTPException(status_code=400, detail="Email is already registered")
 
-    user_role = UserRole.admin if clean_email in {"admin@elanora-luxury.com", "sarthakraut1484@gmail.com", "sarthak1484@gmail.com"} else UserRole.user
+    user_role = UserRole.admin if clean_email in {"admin@elanora-luxury.com", "sarthakraut1484@gmail.com"} else UserRole.user
+    clean_phone = clean_phone_number(data.phone) if data.phone else None
 
     user = User(
         full_name=data.full_name.strip(),
         email=clean_email,
         password_hash=hash_password(data.password),
         role=user_role,
+        phone=clean_phone,
         is_active=True,
     )
     db.add(user)
     await db.commit()
     await db.refresh(user)
 
-    auth_logger.info(f"User registered successfully: {user.email} (ID: {user.id})")
+    auth_logger.info(f"User registered successfully: {user.email} (ID: {user.id}, Phone: {user.phone})")
     return user
 
 

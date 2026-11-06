@@ -266,3 +266,59 @@ async def test_security_and_business_rules(client):
         headers=admin_headers
     )
     assert demote_fail.status_code == 400
+
+    # 7. OTP Flow: send OTP, verify OTP
+    send_otp_res = await client.post(
+        "/auth/send-otp",
+        json={"phone": "+91 9876543210"}
+    )
+    assert send_otp_res.status_code == 200
+    otp_data = send_otp_res.json()
+    assert "dev_otp" in otp_data
+    code = otp_data["dev_otp"]
+
+    verify_otp_res = await client.post(
+        "/auth/verify-otp",
+        json={"phone": "+91 9876543210", "otp": code}
+    )
+    assert verify_otp_res.status_code == 200
+    assert verify_otp_res.json()["verified"] is True
+
+    # 8. User Role Modification & Deletion Flow
+    # Create a dummy user
+    dummy_reg = await client.post(
+        "/auth/register",
+        json={
+            "full_name": "Role Change Test",
+            "email": "role.change.test@example.com",
+            "password": "Password123!",
+            "phone": "+91 9123456789"
+        }
+    )
+    assert dummy_reg.status_code == 201
+    dummy_user = dummy_reg.json()
+
+    # Admin changes role to staff
+    role_change_res = await client.patch(
+        f"/users/{dummy_user['id']}/role",
+        json={"role": "staff"},
+        headers=admin_headers
+    )
+    assert role_change_res.status_code == 200
+    assert role_change_res.json()["role"] == "staff"
+
+    # Admin activates/deactivates user
+    deact_res = await client.patch(
+        f"/users/{dummy_user['id']}/activate",
+        json={"is_active": False},
+        headers=admin_headers
+    )
+    assert deact_res.status_code == 200
+    assert deact_res.json()["is_active"] is False
+
+    # Admin deletes user
+    del_res = await client.delete(
+        f"/users/{dummy_user['id']}",
+        headers=admin_headers
+    )
+    assert del_res.status_code == 200

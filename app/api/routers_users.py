@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from sqlalchemy import delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -10,8 +11,13 @@ from app.core.rate_limiter import limiter
 from app.core.rbac import require_roles
 from app.core.security import hash_password
 from app.db.session import get_db
+from app.models.allocations import Allocation
 from app.models.bookings import Booking
+from app.models.dry_cleaning import DryCleaningRequest
 from app.models.payment import Payment, PaymentStatus, PaymentType
+from app.models.returns import Return
+from app.models.token import RefreshToken
+from app.models.tracking import TrackingEvent
 from app.models.user import User, UserRole
 from app.schemas.auth import UserResponse
 from app.schemas.user import (
@@ -29,7 +35,8 @@ from app.schemas.user import (
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
-SUPER_ADMIN_EMAILS = {"admin@elanora-luxury.com", "sarthak1484@gmail.com", "sarthakraut1484@gmail.com"}
+MASTER_SUPER_ADMIN_EMAILS = {"admin@elanora-luxury.com", "sarthakraut1484@gmail.com"}
+ROOT_ADMIN_EMAIL = "admin@elanora-luxury.com"
 
 
 @router.get("/me", response_model=UserResponse)
@@ -108,22 +115,34 @@ async def set_user_role(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    # Guard 1: Prevent admin from accidentally demoting own account
     if user_id == current_user.id and data.role != UserRole.admin:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="You cannot remove your own administrator privileges."
         )
 
-    if user.email.lower() in SUPER_ADMIN_EMAILS:
+    # Guard 2: Root system concierge cannot be demoted
+    if user.email.lower() == ROOT_ADMIN_EMAIL and data.role != UserRole.admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Protected Super Administrator: privilege role cannot be altered or removed."
+            detail="The root System Concierge (admin@elanora-luxury.com) is permanently protected and cannot be demoted."
+        )
+
+    # Guard 3: Non-master administrator cannot modify a Master Super Admin
+    is_target_master = user.email.lower() in MASTER_SUPER_ADMIN_EMAILS
+    is_current_master = current_user.email.lower() in MASTER_SUPER_ADMIN_EMAILS
+    if is_target_master and not is_current_master:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only a Master Super Administrator can alter high-priority administrator privileges."
         )
 
     user.role = data.role
     user.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(user)
+    logger.info(f"User {user.email} (ID {user_id}) role updated to {data.role} by {current_user.email}")
     return user
 
 
@@ -145,17 +164,84 @@ async def set_user_active(
             detail="You cannot deactivate your own administrator account."
         )
 
-    if user.email.lower() in SUPER_ADMIN_EMAILS and not data.is_active:
+    if user.email.lower() == ROOT_ADMIN_EMAIL and not data.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Protected Super Administrator: Super Admin account cannot be deactivated."
+            detail="The root System Concierge (admin@elanora-luxury.com) cannot be deactivated."
+        )
+
+    is_target_master = user.email.lower() in MASTER_SUPER_ADMIN_EMAILS
+    is_current_master = current_user.email.lower() in MASTER_SUPER_ADMIN_EMAILS
+    if is_target_master and not is_current_master and not data.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only a Master Super Administrator can deactivate high-priority administrator accounts."
         )
 
     user.is_active = data.is_active
     user.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(user)
+    logger.info(f"User {user.email} (ID {user_id}) active status set to {data.is_active} by {current_user.email}")
     return user
+
+
+@router.delete("/{user_id}", status_code=status.HTTP_200_OK)
+async def delete_user(
+    user_id: int,
+    current_user: User = Depends(require_roles([UserRole.admin])),
+    db: AsyncSession = Depends(get_db)
+):
+    res = await db.execute(select(User).where(User.id == user_id))
+    user = res.scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You cannot delete your own account while logged in."
+        )
+
+    if user.email.lower() == ROOT_ADMIN_EMAIL:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The root System Concierge (admin@elanora-luxury.com) is permanently protected and cannot be deleted."
+        )
+
+    is_target_master = user.email.lower() in MASTER_SUPER_ADMIN_EMAILS
+    is_current_master = current_user.email.lower() in MASTER_SUPER_ADMIN_EMAILS
+    if is_target_master and not is_current_master:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only a Master Super Administrator can delete high-priority administrator accounts."
+        )
+
+    # Clean up associated records before deletion to prevent foreign key errors:
+    # 1. Delete user refresh tokens
+    await db.execute(delete(RefreshToken).where(RefreshToken.user_id == user_id))
+
+    # 2. Get user bookings and safely clean them up
+    b_res = await db.execute(select(Booking.id).where(Booking.user_id == user_id))
+    user_booking_ids = b_res.scalars().all()
+    if user_booking_ids:
+        await db.execute(update(DryCleaningRequest).where(DryCleaningRequest.booking_id.in_(user_booking_ids)).values(booking_id=None))
+        await db.execute(delete(TrackingEvent).where(TrackingEvent.booking_id.in_(user_booking_ids)))
+        await db.execute(delete(Payment).where(Payment.booking_id.in_(user_booking_ids)))
+        await db.execute(delete(Return).where(Return.booking_id.in_(user_booking_ids)))
+        await db.execute(delete(Allocation).where(Allocation.booking_id.in_(user_booking_ids)))
+        await db.execute(delete(Booking).where(Booking.id.in_(user_booking_ids)))
+
+    # 3. Reassign staff/admin operations performed by this user to current_user
+    await db.execute(update(Allocation).where(Allocation.allocated_by == user_id).values(allocated_by=current_user.id))
+    await db.execute(update(Return).where(Return.processed_by == user_id).values(processed_by=current_user.id))
+    await db.execute(update(TrackingEvent).where(TrackingEvent.created_by == user_id).values(created_by=None))
+
+    deleted_email = user.email
+    await db.delete(user)
+    await db.commit()
+    logger.info(f"User {deleted_email} (ID {user_id}) permanently deleted by {current_user.email}")
+    return {"message": f"User {deleted_email} permanently deleted successfully.", "id": user_id}
 
 
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)

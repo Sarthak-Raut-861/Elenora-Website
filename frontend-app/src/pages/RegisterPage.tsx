@@ -1,7 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AlertCircle, CheckCircle2, Eye, EyeOff, Mail, Lock, User, Loader2, Check, Crown } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  User,
+  Loader2,
+  Check,
+  Crown,
+  Phone,
+  KeyRound,
+  ShieldCheck,
+  Sparkles,
+  RotateCcw,
+} from "lucide-react";
 import { useAuth } from "../auth-context";
+import { api } from "../api";
 import { validateName, validateEmail, validatePassword } from "../utils/validation";
 
 function getStrength(pw: string): { score: number; label: string; color: string } {
@@ -68,6 +85,78 @@ export function RegisterPage() {
   const [errors, setErrors] = useState<Record<string, string | null>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
+  // Phone and OTP states
+  const [phone, setPhone] = useState("");
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  const [devOtpHint, setDevOtpHint] = useState<string | null>(null);
+  const [otpFeedback, setOtpFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  useEffect(() => {
+    if (countdown <= 0) return;
+    const interval = setInterval(() => {
+      setCountdown((c) => c - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [countdown]);
+
+  const cleanPhoneDigits = (raw: string) => {
+    const digits = raw.replace(/\D/g, "");
+    if (digits.startsWith("91") && digits.length === 12) return digits.slice(2);
+    return digits;
+  };
+
+  const handleSendOtp = async () => {
+    const digits = cleanPhoneDigits(phone);
+    if (!/^[6-9]\d{9}$/.test(digits)) {
+      setPhoneError("Please enter a valid 10-digit Indian mobile number (e.g. 98765 43210)");
+      return;
+    }
+    setPhoneError(null);
+    setIsSendingOtp(true);
+    setOtpFeedback(null);
+    try {
+      const res = await api.sendOtp("+91" + digits, email || undefined);
+      setOtpSent(true);
+      setCountdown(30);
+      if (res.dev_otp) {
+        setDevOtpHint(res.dev_otp);
+        setOtpCode(res.dev_otp);
+      }
+      setOtpFeedback({ type: "success", text: res.message || "OTP code sent to your phone." });
+    } catch (err: any) {
+      setOtpFeedback({ type: "error", text: err?.message || "Failed to dispatch OTP. Please check the number." });
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const digits = cleanPhoneDigits(phone);
+    if (!otpCode.trim()) {
+      setOtpFeedback({ type: "error", text: "Please enter the 6-digit OTP code." });
+      return;
+    }
+    setIsVerifyingOtp(true);
+    setOtpFeedback(null);
+    try {
+      const res = await api.verifyOtp("+91" + digits, otpCode.trim());
+      if (res.verified) {
+        setIsPhoneVerified(true);
+        setOtpFeedback({ type: "success", text: "Phone number verified successfully!" });
+      }
+    } catch (err: any) {
+      setOtpFeedback({ type: "error", text: err?.message || "Invalid or expired OTP code." });
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
   const strength = getStrength(password);
 
   const getFieldBorder = (field: string, value: string) => {
@@ -90,13 +179,18 @@ export function RegisterPage() {
     validateField(field, value);
   };
 
-  const canSubmit = !loading && !success && Boolean(fullName && email && password && confirmPassword && termsAccepted);
+  const canSubmit =
+    !loading &&
+    !success &&
+    Boolean(fullName && email && password && confirmPassword && termsAccepted && isPhoneVerified);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     let cleanEmail = email.trim().toLowerCase();
     if (cleanEmail.endsWith("@gmail.co")) cleanEmail = cleanEmail + "m";
     const cleanName = fullName.trim();
+    const digits = cleanPhoneDigits(phone);
+
     const newErrors: Record<string, string | null> = {
       fullName: validateName(cleanName),
       email: validateEmail(cleanEmail),
@@ -106,11 +200,22 @@ export function RegisterPage() {
     setErrors(newErrors);
     setTouched({ fullName: true, email: true, password: true, confirmPassword: true });
     if (!termsAccepted) setErrors((prev) => ({ ...prev, terms: "You must accept the terms" }));
+
+    if (!isPhoneVerified) {
+      setPhoneError("Mobile number verification via OTP is required before creating your account.");
+      return;
+    }
+
     if (Object.values(newErrors).some(Boolean) || !termsAccepted) return;
     setError("");
     setLoading(true);
     try {
-      await register({ full_name: cleanName, email: cleanEmail, password });
+      await register({
+        full_name: cleanName,
+        email: cleanEmail,
+        password,
+        phone: "+91 " + digits,
+      });
       setSuccess(true);
       setTimeout(() => navigate("/login", { state: { email: cleanEmail } }), 1200);
     } catch (err) {
@@ -195,6 +300,190 @@ export function RegisterPage() {
                 {touched.email && !errors.email && email && <Check size={15} color="var(--color-success)" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />}
               </div>
               <FieldError message={touched.email ? errors.email ?? null : null} />
+            </div>
+
+            {/* Mobile Phone & OTP Verification */}
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <label style={labelStyle}>Mobile Phone Number (OTP Required)</label>
+                {isPhoneVerified && (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: "#10B981", fontWeight: 600 }}>
+                    <ShieldCheck size={13} color="#10B981" />
+                    Verified
+                  </span>
+                )}
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+                <div style={{ position: "relative", flex: 1 }}>
+                  <div style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", display: "flex", alignItems: "center", gap: 4, color: "var(--color-text-muted)", pointerEvents: "none", fontSize: 13, fontWeight: 600 }}>
+                    <Phone size={14} color="var(--color-accent-gold)" />
+                    <span>+91</span>
+                  </div>
+                  <input
+                    type="tel"
+                    placeholder="98765 43210"
+                    value={phone}
+                    onChange={(e) => {
+                      setPhone(e.target.value);
+                      if (phoneError) setPhoneError(null);
+                    }}
+                    disabled={loading || isPhoneVerified}
+                    style={{
+                      width: "100%",
+                      boxSizing: "border-box",
+                      padding: "12px 14px 12px 64px",
+                      fontSize: 14,
+                      color: isPhoneVerified ? "#10B981" : "var(--color-text-primary)",
+                      background: isPhoneVerified ? "rgba(16, 185, 129, 0.05)" : "var(--color-bg-secondary)",
+                      border: `1.5px solid ${isPhoneVerified ? "#10B981" : phoneError ? "var(--color-error)" : "var(--color-border)"}`,
+                      borderRadius: "var(--radius-md)",
+                      outline: "none",
+                      fontFamily: "var(--font-sans)",
+                      transition: "all 0.2s ease",
+                    }}
+                  />
+                  {isPhoneVerified && (
+                    <Check size={16} color="#10B981" style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+                  )}
+                </div>
+
+                {!isPhoneVerified && (
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={isSendingOtp || countdown > 0 || !phone.trim()}
+                    style={{
+                      padding: "0 16px",
+                      borderRadius: "var(--radius-md)",
+                      background: countdown > 0 ? "rgba(255, 255, 255, 0.05)" : "linear-gradient(135deg, #C9A34A 0%, #E6CA65 100%)",
+                      border: "none",
+                      color: countdown > 0 ? "#737373" : "#0B0B0B",
+                      fontSize: 12,
+                      fontWeight: 700,
+                      letterSpacing: "0.04em",
+                      cursor: countdown > 0 || isSendingOtp || !phone.trim() ? "not-allowed" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      whiteSpace: "nowrap",
+                      boxShadow: countdown > 0 ? "none" : "0 2px 10px rgba(201, 163, 74, 0.25)",
+                    }}
+                  >
+                    {isSendingOtp ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : countdown > 0 ? (
+                      `Resend (${countdown}s)`
+                    ) : otpSent ? (
+                      "Resend OTP"
+                    ) : (
+                      "Send OTP"
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {phoneError && <FieldError message={phoneError} />}
+
+              {/* OTP Input Card */}
+              {otpSent && !isPhoneVerified && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    padding: "12px 14px",
+                    borderRadius: 10,
+                    background: "rgba(201, 163, 74, 0.05)",
+                    border: "1px solid rgba(201, 163, 74, 0.3)",
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <span style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.1em", color: "#C9A34A", fontWeight: 700 }}>
+                      Enter 6-Digit Verification Code
+                    </span>
+                    {devOtpHint && (
+                      <button
+                        type="button"
+                        onClick={() => setOtpCode(devOtpHint)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#C9A34A",
+                          fontSize: 11,
+                          cursor: "pointer",
+                          textDecoration: "underline",
+                          padding: 0,
+                        }}
+                      >
+                        Auto-fill ({devOtpHint})
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ position: "relative", flex: 1 }}>
+                      <KeyRound size={14} color="var(--color-text-faint)" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+                      <input
+                        type="text"
+                        maxLength={6}
+                        placeholder="••••••"
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value)}
+                        style={{
+                          width: "100%",
+                          boxSizing: "border-box",
+                          padding: "10px 14px 10px 36px",
+                          fontSize: 16,
+                          letterSpacing: "0.25em",
+                          fontWeight: 700,
+                          color: "#FFFFFF",
+                          background: "var(--color-bg-secondary)",
+                          border: "1px solid rgba(201, 163, 74, 0.4)",
+                          borderRadius: "var(--radius-md)",
+                          outline: "none",
+                          fontFamily: "monospace",
+                        }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleVerifyOtp}
+                      disabled={isVerifyingOtp || !otpCode.trim()}
+                      style={{
+                        padding: "0 18px",
+                        borderRadius: "var(--radius-md)",
+                        background: "#10B981",
+                        border: "none",
+                        color: "#FFFFFF",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor: isVerifyingOtp || !otpCode.trim() ? "not-allowed" : "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        boxShadow: "0 2px 10px rgba(16, 185, 129, 0.3)",
+                      }}
+                    >
+                      {isVerifyingOtp ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                      <span>Verify Code</span>
+                    </button>
+                  </div>
+
+                  {otpFeedback && (
+                    <div
+                      style={{
+                        marginTop: 8,
+                        fontSize: 12,
+                        color: otpFeedback.type === "success" ? "#10B981" : "var(--color-error)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                      }}
+                    >
+                      {otpFeedback.type === "success" ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />}
+                      <span>{otpFeedback.text}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Password row */}

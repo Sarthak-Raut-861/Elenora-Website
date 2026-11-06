@@ -7,6 +7,25 @@ class UserRegister(BaseModel):
     full_name: str
     email: EmailStr
     password: str
+    phone: str | None = None
+
+class SendOtpRequest(BaseModel):
+    phone: str
+    email: EmailStr | None = None
+
+class SendOtpResponse(BaseModel):
+    message: str
+    phone: str
+    expires_in_seconds: int = 300
+    dev_otp: str | None = None
+
+class VerifyOtpRequest(BaseModel):
+    phone: str
+    otp: str
+
+class VerifyOtpResponse(BaseModel):
+    verified: bool
+    message: str
 
 class UserResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)

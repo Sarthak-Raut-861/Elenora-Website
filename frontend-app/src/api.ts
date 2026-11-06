@@ -124,8 +124,8 @@ async function parseResponse<T>(response: Response): Promise<T> {
     throw new ApiError(message, response.status)
   }
 
-  if (data === null) {
-    throw new ApiError(`Invalid or empty response from server (${response.status})`, response.status)
+  if (response.status === 204 || response.status === 205 || data === null) {
+    return null as unknown as T
   }
 
   return data as T

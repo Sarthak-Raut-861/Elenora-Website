@@ -58,3 +58,4 @@ async def test_offers_crud_flow(client):
     # 6. Admin deletes offer
     del_res = await client.delete(f"/offers/{offer_id}", headers=admin_headers)
     assert del_res.status_code == 204
+

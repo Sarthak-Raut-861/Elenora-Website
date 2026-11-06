@@ -114,10 +114,11 @@ async def lifespan(app: FastAPI):
                 await db.commit()
                 logger.info(f"Initialized dry cleaner account: {cleaner_email}")
 
-            # 4. Auto-seed operational defaults (plans and dry cleaners) if empty
+            # 4. Auto-seed operational defaults and core catalog if empty
             try:
-                from app.db.seed import seed_operational_defaults
+                from app.db.seed import seed_operational_defaults, seed_core_catalog_if_empty
                 await seed_operational_defaults()
+                await seed_core_catalog_if_empty()
             except Exception as se:
                 logger.warning(f"Operational defaults note: {se}")
     except Exception as e:

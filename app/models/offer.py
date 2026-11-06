@@ -26,3 +26,4 @@ class Offer(Base):
     # Optional relationships
     category = relationship("Category", lazy="joined")
     asset = relationship("Asset", lazy="joined")
+

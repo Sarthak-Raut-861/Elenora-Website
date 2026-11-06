@@ -376,5 +376,165 @@ async def seed(sample_catalog: bool = False):
     print("==========================================")
 
 
+async def seed_core_catalog_if_empty():
+    async with AsyncSessionLocal() as db:
+        res = await db.execute(select(Category))
+        cats = res.scalars().all()
+        cat_map = {c.name.lower().strip(): c.id for c in cats}
+
+        default_categories = [
+            "Bridal Wear",
+            "Jens",
+            "Casual Wear",
+            "Party Wear",
+            "Haute Couture Lehengas",
+            "Bridal Gowns",
+            "Heritage Sherwanis",
+            "Royal Banarasi Sarees",
+            "Cocktail Tuxedos",
+            "Artisanal Jewellery",
+        ]
+        
+        for cname in default_categories:
+            key = cname.lower().strip()
+            if key not in cat_map:
+                cat = Category(name=cname, created_at=datetime.now(timezone.utc))
+                db.add(cat)
+                await db.commit()
+                await db.refresh(cat)
+                cat_map[key] = cat.id
+
+        res_assets = await db.execute(select(Asset))
+        assets_list = res_assets.scalars().all()
+        if len(assets_list) == 0:
+            bridal_id = cat_map.get("bridal wear") or cat_map.get("haute couture lehengas") or 1
+            jens_id = cat_map.get("jens") or cat_map.get("heritage sherwanis") or 2
+            gowns_id = cat_map.get("bridal gowns") or bridal_id
+            sarees_id = cat_map.get("royal banarasi sarees") or 1
+            jewel_id = cat_map.get("artisanal jewellery") or 1
+
+            core_assets = [
+                {
+                    "name": "The Crimson Empress Zardozi Lehenga",
+                    "asset_code": "CRIMSON-EMP-001",
+                    "description": "Handcrafted silk velvet lehenga with antique gold zardozi and semi-precious stone embellishments.",
+                    "image_url": "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=800&q=80",
+                    "category_id": bridal_id,
+                    "buy_price": 52000.0,
+                    "rental_price": 3899.0,
+                    "sizes": "XS,S,M,L,XL",
+                },
+                {
+                    "name": "Burgundy Velvet Royal Palace Bridal Lehenga",
+                    "asset_code": "BRL-PALACE-101",
+                    "description": "Imperial burgundy micro-velvet bridal lehenga adorned with intricate zardozi, dabka, and pearl hand-embroidery.",
+                    "image_url": "/royal-bridal-banner.jpg",
+                    "category_id": bridal_id,
+                    "buy_price": 58000.0,
+                    "rental_price": 4499.0,
+                    "sizes": "S,M,L,XL",
+                },
+                {
+                    "name": "Noor Ivory & Molten Gold Embroidered Bridal Ensemble",
+                    "asset_code": "BRL-NOOR-103",
+                    "description": "Ethereal ivory organza and raw silk bridal lehenga glistening with molten gold gota patti and Swarovski crystals.",
+                    "image_url": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80",
+                    "category_id": bridal_id,
+                    "buy_price": 46500.0,
+                    "rental_price": 3499.0,
+                    "sizes": "S,M,L",
+                },
+                {
+                    "name": "Heritage Royal Rose Hand-Embroidered Bridal Set",
+                    "asset_code": "BRL-ROSE-104",
+                    "description": "Rose-pink handloom silk bridal outfit woven with signature rose motifs and antique metallic threadwork.",
+                    "image_url": "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=800&q=80",
+                    "category_id": bridal_id,
+                    "buy_price": 49000.0,
+                    "rental_price": 3699.0,
+                    "sizes": "XS,S,M",
+                },
+                {
+                    "name": "Royal Jodhpur Raw Silk Sherwani",
+                    "asset_code": "ROYAL-JODH-001",
+                    "description": "Regal ivory raw silk sherwani tailored with hand-carved enamel buttons and subtle zardozi collar embroidery.",
+                    "image_url": "https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=800&q=80",
+                    "category_id": jens_id,
+                    "buy_price": 42000.0,
+                    "rental_price": 3299.0,
+                    "sizes": "38,40,42,44",
+                },
+                {
+                    "name": "Imperial Velvet Wedding Sherwani & Stole",
+                    "asset_code": "JENS-VELVET-SHERWANI",
+                    "description": "Royal midnight navy velvet sherwani accented with antique dabka zardozi motifs and a pure raw silk stole.",
+                    "image_url": "https://images.unsplash.com/photo-1597983073493-88cd35cf93b0?auto=format&fit=crop&w=800&q=80",
+                    "category_id": jens_id,
+                    "buy_price": 48000.0,
+                    "rental_price": 3599.0,
+                    "sizes": "38,40,42,44",
+                },
+                {
+                    "name": "Midnight Velvet Peak Lapel Tuxedo",
+                    "asset_code": "MIDNIGHT-TUX-001",
+                    "description": "Italian midnight blue velvet evening jacket paired with tailored wool trousers and silk faille lapels.",
+                    "image_url": "https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80",
+                    "category_id": jens_id,
+                    "buy_price": 36000.0,
+                    "rental_price": 2999.0,
+                    "sizes": "38,40,42,44",
+                },
+                {
+                    "name": "Moonlight Ivory Chantilly Bridal Gown",
+                    "asset_code": "MOONLIGHT-IVORY-001",
+                    "description": "Corseted French lace gown with hand-sewn pearl details and an ethereal cathedral-length tulle train.",
+                    "image_url": "https://images.unsplash.com/photo-1594552072238-b8a33785b261?auto=format&fit=crop&w=800&q=80",
+                    "category_id": gowns_id,
+                    "buy_price": 52000.0,
+                    "rental_price": 4199.0,
+                    "sizes": "XS,S,M,L",
+                },
+                {
+                    "name": "Kashi Heritage Kadwa Banarasi Saree",
+                    "asset_code": "KASHI-BANARASI-001",
+                    "description": "Pure katan silk saree featuring intricate floral jaal woven with real gold and silver zari threads.",
+                    "image_url": "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80",
+                    "category_id": sarees_id,
+                    "buy_price": 34000.0,
+                    "rental_price": 2699.0,
+                    "sizes": "Free Size (Includes Unstitched Blouse)",
+                },
+                {
+                    "name": "Kundan & Uncut Polki Choker Suite",
+                    "asset_code": "POLKI-CHOKER-001",
+                    "description": "22k gold finished handcrafted choker featuring natural emerald drops, south sea pearls, and polki motifs.",
+                    "image_url": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=800&q=80",
+                    "category_id": jewel_id,
+                    "buy_price": 28000.0,
+                    "rental_price": 2199.0,
+                    "sizes": "One Size Adjustable",
+                },
+            ]
+
+            for a in core_assets:
+                asset = Asset(
+                    name=a["name"],
+                    asset_code=a["asset_code"],
+                    description=a["description"],
+                    image_url=a["image_url"],
+                    category_id=a["category_id"],
+                    status=AssetStatus.available,
+                    buy_price=a["buy_price"],
+                    rental_price=a["rental_price"],
+                    listing_type="both",
+                    sizes=a["sizes"],
+                    is_active=True,
+                    is_in_dry_cleaning=False,
+                )
+                db.add(asset)
+            await db.commit()
+            print("[OK] Core catalog seeded automatically.")
+
+
 if __name__ == "__main__":
     asyncio.run(seed())

@@ -22,22 +22,17 @@ async def client():
 
 @pytest.fixture(scope="session", autouse=True)
 def clean_db_session():
-    # Setup / Teardown: ensure tests leave the user database 100% clean
+    # Setup / Teardown: ensure tests only clean up test-created records
     yield
     try:
         db_path = os.path.join(os.path.abspath("."), "asset_tracking.db")
         if os.path.exists(db_path):
             conn = sqlite3.connect(db_path)
             c = conn.cursor()
-            c.execute("DELETE FROM returns")
-            c.execute("DELETE FROM dry_cleaning_requests")
-            c.execute("DELETE FROM tracking_events")
-            c.execute("DELETE FROM allocations")
-            c.execute("DELETE FROM payments")
-            c.execute("DELETE FROM bookings")
-            c.execute("DELETE FROM assets")
-            c.execute("DELETE FROM categories")
-            c.execute("DELETE FROM users WHERE email = 'test.client@example.com'")
+            c.execute("DELETE FROM assets WHERE asset_code LIKE 'TEST-%' OR name LIKE 'Test%'")
+            c.execute("DELETE FROM categories WHERE name LIKE 'Test%'")
+            c.execute("DELETE FROM offers WHERE title LIKE 'Test%'")
+            c.execute("DELETE FROM users WHERE email IN ('test.client@example.com', 'test.admin@example.com')")
             conn.commit()
             conn.close()
     except Exception as e:

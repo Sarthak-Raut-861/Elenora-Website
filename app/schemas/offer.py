@@ -54,3 +54,4 @@ class OfferResponse(BaseModel):
     expires_at: datetime | None = None
     category_name: str | None = None
     asset_name: str | None = None
+

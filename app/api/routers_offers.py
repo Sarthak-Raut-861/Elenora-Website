@@ -169,3 +169,4 @@ async def delete_offer(
     await db.delete(offer)
     await db.commit()
     return None
+

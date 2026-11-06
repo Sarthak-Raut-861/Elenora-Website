@@ -203,6 +203,98 @@ export function HomePage() {
     return shuffled.slice(0, 4);
   }, [bridalAssetsPool, uniqueAssets]);
 
+  // Pick 4 random collection categories from our database once per page load
+  const randomCollectionCategories = useMemo(() => {
+    if (!categories || categories.length === 0) {
+      return EDITORIAL_COLLECTIONS;
+    }
+
+    const fallbackImages: Record<string, { image: string; subtitle: string }> = {
+      lehenga: {
+        image: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=900&q=80",
+        subtitle: "Bridal & Sangeet Masterpieces",
+      },
+      saree: {
+        image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=900&q=80",
+        subtitle: "Banarasi, Chiffon & Pre-Stitched",
+      },
+      gown: {
+        image: "https://images.unsplash.com/photo-1594552072238-b8a33785b261?auto=format&fit=crop&w=900&q=80",
+        subtitle: "Red Carpet & Cocktail Statements",
+      },
+      sherwani: {
+        image: "https://images.unsplash.com/photo-1609357605129-26f69add5d6e?auto=format&fit=crop&w=900&q=80",
+        subtitle: "Regal Raw Silk & Signature Zardozi",
+      },
+    };
+
+    // Shuffle available categories
+    const shuffledCats = [...categories].sort(() => 0.5 - Math.random());
+    const pickedCats = shuffledCats.slice(0, 4);
+
+    interface CollectionCardItem {
+      id?: number;
+      name: string;
+      subtitle: string;
+      count: string;
+      image: string;
+      to: string;
+    }
+
+    const mapped: CollectionCardItem[] = pickedCats.map((cat, idx) => {
+      // Find real assets belonging to this category
+      const catAssets = uniqueAssets.filter((a) => a.category_id === cat.id);
+      const assetWithImage = catAssets.find((a) => a.image_url && a.image_url.trim().length > 0);
+      const catLower = cat.name.toLowerCase();
+
+      let fallbackImg = "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=900&q=80";
+      let subtitle = "Handcrafted Royal Silhouettes & Coutures";
+
+      if (catLower.includes("lehenga") || catLower.includes("bridal")) {
+        fallbackImg = fallbackImages.lehenga.image;
+        subtitle = "Bridal & Sangeet Masterpieces";
+      } else if (catLower.includes("sari") || catLower.includes("saree") || catLower.includes("drape")) {
+        fallbackImg = fallbackImages.saree.image;
+        subtitle = "Banarasi, Chiffon & Pre-Stitched";
+      } else if (catLower.includes("gown") || catLower.includes("dress") || catLower.includes("tail")) {
+        fallbackImg = fallbackImages.gown.image;
+        subtitle = "Red Carpet & Cocktail Statements";
+      } else if (catLower.includes("sherwani") || catLower.includes("kurta") || catLower.includes("men")) {
+        fallbackImg = fallbackImages.sherwani.image;
+        subtitle = "Regal Raw Silk & Signature Zardozi";
+      } else {
+        const fbs = Object.values(fallbackImages);
+        const fb = fbs[idx % fbs.length];
+        fallbackImg = fb.image;
+        subtitle = fb.subtitle;
+      }
+
+      const imageUrl = assetWithImage?.image_url || fallbackImg;
+      const countLabel = catAssets.length > 0 ? `${catAssets.length}+ Vault Items` : "Curated Archive";
+
+      return {
+        id: cat.id,
+        name: cat.name,
+        subtitle,
+        count: countLabel,
+        image: imageUrl,
+        to: `/assets?category=${encodeURIComponent(cat.name)}`,
+      };
+    });
+
+    // If fewer than 4 categories exist in database, supplement with curated placeholders
+    if (mapped.length < 4) {
+      const remainingNeeded = 4 - mapped.length;
+      const usedNames = new Set(mapped.map((m) => m.name.toLowerCase()));
+      const availableFillers = EDITORIAL_COLLECTIONS.filter((c) => !usedNames.has(c.name.toLowerCase()));
+      for (let i = 0; i < remainingNeeded && i < availableFillers.length; i++) {
+        mapped.push(availableFillers[i]);
+      }
+    }
+
+    return mapped;
+  }, [categories, uniqueAssets]);
+
   const slide = HERO_SLIDES[currentSlide];
   const activeLook = SHOP_THE_LOOK_ITEMS[activeLookIndex];
 
@@ -1119,9 +1211,9 @@ export function HomePage() {
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
-            {EDITORIAL_COLLECTIONS.map((col, idx) => (
+            {randomCollectionCategories.map((col, idx) => (
               <motion.div
-                key={idx}
+                key={col.name + idx}
                 whileHover={{ y: -6 }}
                 transition={{ duration: 0.25 }}
                 onClick={() => navigate(col.to)}

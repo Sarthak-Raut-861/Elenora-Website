@@ -52,34 +52,63 @@ const HERO_SLIDES = [
   },
 ];
 
-// ── Shop The Look Ensemble Components (Rozina "Shop The Look") ──
-const SHOP_THE_LOOK_ITEMS = [
+// ── Curated Rental Gowns & Jewellery Looks (Shop The Look) ──
+interface ShopTheLookItem {
+  id: string;
+  realAssetId?: number | null;
+  title: string;
+  sku: string;
+  rentalPrice: number;
+  buyPrice: number;
+  image: string;
+  desc: string;
+  categoryTag?: string;
+}
+
+const DEFAULT_RENTAL_LOOKS: ShopTheLookItem[] = [
   {
-    id: "look-1",
-    title: "Beige Tasseled Anarkali with Pista Green Koti",
-    sku: "ANK-9201",
-    rentalPrice: 2899,
-    buyPrice: 34500,
-    image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=700&q=80",
-    desc: "Crushed silk flared anarkali paired with an artisanal hand-embroidered koti featuring gold gota patti and emerald beads.",
+    id: "look-gwn-1",
+    realAssetId: null,
+    title: "Emerald Velvet Sculpted Red Carpet Gala Gown",
+    sku: "GWN-701",
+    categoryTag: "RENTAL GOWN",
+    rentalPrice: 3899,
+    buyPrice: 48000,
+    image: "https://images.unsplash.com/photo-1566737236500-c8ac43014a67?auto=format&fit=crop&w=900&q=80",
+    desc: "Sculpted emerald velvet evening gown with structured off-shoulder drape, gold metallic dabka embroidery, and court train.",
   },
   {
-    id: "look-2",
-    title: "Off-White Anarkali with Gold Silk Gota Koti",
-    sku: "GOTA-410",
-    rentalPrice: 3499,
-    buyPrice: 42000,
-    image: "https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?auto=format&fit=crop&w=700&q=80",
-    desc: "Pure raw silk jacket embroidered with micro pearls and cut-dana work draped over an ethereal ivory kalidar.",
+    id: "look-jwl-1",
+    realAssetId: null,
+    title: "Royal Kundan & Uncut Polki Choker Jewellery Set",
+    sku: "JWL-204",
+    categoryTag: "RENTAL JEWELLERY",
+    rentalPrice: 1899,
+    buyPrice: 28000,
+    image: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=900&q=80",
+    desc: "Handcrafted 22k gold plated royal choker necklace set with uncut polki stones, emerald drops, matching jhumkas, and maang tikka.",
   },
   {
-    id: "look-3",
-    title: "Purple Velvet Embroidered Angarkha with Ruffled Dupatta",
-    sku: "ANG-880",
-    rentalPrice: 3199,
-    buyPrice: 38000,
-    image: "https://images.unsplash.com/photo-1594552072238-b8a33785b261?auto=format&fit=crop&w=700&q=80",
-    desc: "Regal micro-velvet silhouette enriched with antique zardozi work and a dramatic tiered organza ruffle dupatta.",
+    id: "look-gwn-2",
+    realAssetId: null,
+    title: "Ivory Pearl & Molten Gold Trail Cocktail Gown",
+    sku: "GWN-812",
+    categoryTag: "RENTAL GOWN",
+    rentalPrice: 4299,
+    buyPrice: 54000,
+    image: "https://images.unsplash.com/photo-1594552072238-b8a33785b261?auto=format&fit=crop&w=900&q=80",
+    desc: "Architectural trailing gown draped in champagne organza with delicate pearl micro-embroidery for gala evenings.",
+  },
+  {
+    id: "look-jwl-2",
+    realAssetId: null,
+    title: "Imperial Temple Gold & Basra Pearl Choker Ensemble",
+    sku: "JWL-310",
+    categoryTag: "RENTAL JEWELLERY",
+    rentalPrice: 2199,
+    buyPrice: 32000,
+    image: "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?auto=format&fit=crop&w=900&q=80",
+    desc: "Imperial royal heritage necklace with intricate filigree peacock motifs, ruby accents, and cascading Basra pearl drops.",
   },
 ];
 
@@ -249,8 +278,85 @@ export function HomePage() {
     });
   }, [categories, uniqueAssets]);
 
+  // Curated Rental Gowns & Jewellery for "Shop The Look"
+  const dynamicShopTheLookItems = useMemo<ShopTheLookItem[]>(() => {
+    // 1. Filter rental-eligible pieces from user-uploaded assets
+    const rentalEligible = uniqueAssets.filter((a) => {
+      const type = (a.listing_type || "both").toLowerCase();
+      const hasRentalPrice = typeof a.rental_price === "number" && a.rental_price > 0;
+      return type === "rent" || type === "both" || hasRentalPrice;
+    });
+
+    // 2. Identify gowns and jewellery pieces from user uploads
+    const userGownsAndJewellery = rentalEligible.filter((a) => {
+      const cat = categories.find((c) => c.id === a.category_id);
+      const catName = (cat?.name || "").toLowerCase();
+      const name = a.name.toLowerCase();
+      const desc = (a.description || "").toLowerCase();
+      return (
+        catName.includes("gown") ||
+        catName.includes("jewel") ||
+        catName.includes("ornament") ||
+        catName.includes("party") ||
+        catName.includes("cocktail") ||
+        catName.includes("dress") ||
+        name.includes("gown") ||
+        name.includes("jewel") ||
+        name.includes("necklace") ||
+        name.includes("choker") ||
+        name.includes("earring") ||
+        name.includes("pendant") ||
+        name.includes("dress") ||
+        name.includes("set") ||
+        desc.includes("gown") ||
+        desc.includes("jewel") ||
+        desc.includes("necklace") ||
+        desc.includes("choker")
+      );
+    });
+
+    // Prioritize gowns and jewellery, then other rental pieces
+    const prioritizedUserAssets = userGownsAndJewellery.length > 0
+      ? userGownsAndJewellery
+      : rentalEligible;
+
+    const mappedUserItems: ShopTheLookItem[] = prioritizedUserAssets.map((a, idx) => {
+      const cat = categories.find((c) => c.id === a.category_id);
+      const isJewel = a.name.toLowerCase().includes("jewel") ||
+                      a.name.toLowerCase().includes("choker") ||
+                      a.name.toLowerCase().includes("necklace") ||
+                      (cat?.name || "").toLowerCase().includes("jewel");
+      const categoryTag = isJewel ? "RENTAL JEWELLERY" : "RENTAL GOWN";
+
+      return {
+        id: `uploaded-${a.id}`,
+        realAssetId: a.id,
+        title: a.name,
+        sku: (a as any).sku || `ELN-${a.id.toString().padStart(4, "0")}`,
+        rentalPrice: a.rental_price || 2499,
+        buyPrice: a.buy_price || 32000,
+        image: a.image_url && a.image_url.trim().length > 0
+          ? a.image_url
+          : DEFAULT_RENTAL_LOOKS[idx % DEFAULT_RENTAL_LOOKS.length].image,
+        desc: a.description || "Mastercrafted couture rental piece tailored for grand galas and red carpet occasions.",
+        categoryTag: cat?.name ? `RENTAL ${cat.name.toUpperCase()}` : categoryTag,
+      };
+    });
+
+    // If user has uploaded pieces, use them; if fewer than 3, backfill from DEFAULT_RENTAL_LOOKS so grid is always complete
+    if (mappedUserItems.length >= 3) {
+      return mappedUserItems.slice(0, 4);
+    }
+    if (mappedUserItems.length > 0) {
+      const remainingNeeded = 3 - mappedUserItems.length;
+      return [...mappedUserItems, ...DEFAULT_RENTAL_LOOKS.slice(0, remainingNeeded)];
+    }
+
+    return DEFAULT_RENTAL_LOOKS;
+  }, [uniqueAssets, categories]);
+
   const slide = HERO_SLIDES[currentSlide];
-  const activeLook = SHOP_THE_LOOK_ITEMS[activeLookIndex];
+  const activeLook = dynamicShopTheLookItems[activeLookIndex] || dynamicShopTheLookItems[0] || DEFAULT_RENTAL_LOOKS[0];
 
   return (
     <div style={{ background: "#0B0B0B", color: "#FFFFFF", minHeight: "100vh" }}>
@@ -888,13 +994,13 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* ── 5. SHOP THE LOOK (INTERACTIVE ROZINA EDITORIAL COMPONENT) ───── */}
+      {/* ── 5. SHOP THE LOOK (CURATED RENTAL GOWNS & JEWELLERY) ──────────── */}
       <section style={{ padding: "64px 20px", background: "#0D0D0D", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <div style={{ maxWidth: 1320, margin: "0 auto" }}>
           
           <div style={{ textAlign: "center", marginBottom: 40 }}>
             <span style={{ fontSize: "0.72rem", letterSpacing: "0.24em", textTransform: "uppercase", color: "#C9A34A", fontWeight: 600 }}>
-              CURATED STYLING
+              CURATED RENTAL STYLING
             </span>
             <h2
               className="gold-metallic-text"
@@ -910,7 +1016,7 @@ export function HomePage() {
               Shop The Look
             </h2>
             <p style={{ fontFamily: "var(--font-sans)", fontSize: "0.95rem", color: "rgba(255,255,255,0.7)", margin: 0 }}>
-              Complete Couture Ensembles Designed by Elanora's Master Drapers
+              Rental Gowns & Heirloom Jewellery Ensembles Crafted by Elanora's Master Drapers
             </p>
           </div>
 
@@ -937,33 +1043,56 @@ export function HomePage() {
                 style={{
                   position: "absolute",
                   inset: 0,
-                  background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 60%)",
+                  background: "linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)",
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "flex-end",
                   padding: 28,
                 }}
               >
-                <span style={{ fontSize: "0.72rem", color: "#C9A34A", letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 700 }}>
-                  RUNWAY SHOWCASE
-                </span>
-                <h3 style={{ fontFamily: "var(--font-brand)", fontSize: "1.5rem", color: "#FFFFFF", margin: "4px 0 8px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <span style={{ fontSize: "0.72rem", color: "#C9A34A", letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 700 }}>
+                    {activeLook.categoryTag || "RENTAL RUNWAY SHOWCASE"}
+                  </span>
+                  <span style={{ fontSize: "0.68rem", color: "#C9A34A", letterSpacing: "0.15em", textTransform: "uppercase", fontWeight: 600 }}>
+                    {activeLook.sku}
+                  </span>
+                </div>
+                <h3 style={{ fontFamily: "var(--font-brand)", fontSize: "1.5rem", color: "#FFFFFF", margin: "4px 0 8px", lineHeight: 1.25 }}>
                   {activeLook.title}
                 </h3>
-                <div style={{ display: "flex", gap: 16, alignItems: "baseline" }}>
-                  <span style={{ fontSize: "1.15rem", fontWeight: 800, color: "#C9A34A" }}>
-                    Rental: {formatINR(activeLook.rentalPrice)}/day
-                  </span>
-                  <span style={{ fontSize: "0.85rem", color: "#A3A3A3" }}>
-                    Buy: {formatINR(activeLook.buyPrice)}
-                  </span>
+                <p style={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.75)", margin: "0 0 14px", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                  {activeLook.desc}
+                </p>
+                <div style={{ display: "flex", gap: 16, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", gap: 16, alignItems: "baseline" }}>
+                    <span style={{ fontSize: "1.2rem", fontWeight: 800, color: "#C9A34A" }}>
+                      Rental: {formatINR(activeLook.rentalPrice)}/day
+                    </span>
+                    <span style={{ fontSize: "0.85rem", color: "#A3A3A3" }}>
+                      Buy: {formatINR(activeLook.buyPrice)}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (activeLook.realAssetId) {
+                        navigate(`/assets/${activeLook.realAssetId}`);
+                      } else {
+                        navigate(`/assets?type=rent&search=${encodeURIComponent(activeLook.title)}`);
+                      }
+                    }}
+                    className="btn-rose-primary"
+                    style={{ padding: "8px 18px", fontSize: "0.78rem" }}
+                  >
+                    Reserve Fitting →
+                  </button>
                 </div>
               </div>
             </div>
 
             {/* Right: Selectable Ensemble Cards */}
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {SHOP_THE_LOOK_ITEMS.map((item, idx) => {
+              {dynamicShopTheLookItems.map((item, idx) => {
                 const isSelected = activeLookIndex === idx;
                 return (
                   <div
@@ -974,7 +1103,7 @@ export function HomePage() {
                       gap: 18,
                       padding: 16,
                       borderRadius: 12,
-                      background: isSelected ? "rgba(201, 163, 74, 0.1)" : "#141414",
+                      background: isSelected ? "rgba(201, 163, 74, 0.12)" : "#141414",
                       border: isSelected ? "1.5px solid #C9A34A" : "1px solid rgba(255,255,255,0.08)",
                       cursor: "pointer",
                       transition: "all 0.25s ease",
@@ -983,13 +1112,13 @@ export function HomePage() {
                     <img
                       src={item.image}
                       alt={item.title}
-                      style={{ width: 84, height: 110, objectFit: "cover", borderRadius: 8, flexShrink: 0 }}
+                      style={{ width: 88, height: 116, objectFit: "cover", borderRadius: 8, flexShrink: 0 }}
                     />
                     <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", flex: 1 }}>
                       <div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                           <span style={{ fontSize: "0.65rem", color: "#C9A34A", fontWeight: 700, letterSpacing: "0.1em" }}>
-                            {item.sku}
+                            {item.sku} • {item.categoryTag || "RENTAL"}
                           </span>
                           {isSelected && (
                             <span style={{ fontSize: "0.62rem", background: "#C9A34A", color: "#0B0B0B", padding: "2px 8px", borderRadius: 9999, fontWeight: 700 }}>
@@ -1012,7 +1141,11 @@ export function HomePage() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/assets?search=${encodeURIComponent(item.title)}`);
+                            if (item.realAssetId) {
+                              navigate(`/assets/${item.realAssetId}`);
+                            } else {
+                              navigate(`/assets?type=rent&search=${encodeURIComponent(item.title)}`);
+                            }
                           }}
                           className="btn-rose-primary"
                           style={{ padding: "6px 14px", fontSize: "0.72rem" }}

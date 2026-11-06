@@ -140,7 +140,8 @@ export function AppLayout() {
         onMouseLeave={() => setShopMenuOpen(false)}
       >
         <div className="navbar-container-responsive" style={{ maxWidth: 1380, margin: "0 auto", padding: "0 32px" }}>
-          <div style={{ height: 70, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          {/* ── DESKTOP TASKBAR (Screen width >= 768px) ── */}
+          <div className="hidden md:flex" style={{ height: 70, alignItems: "center", justifyContent: "space-between" }}>
 
             {/* ── LEFT ZONE: EXACTLY 3 MINIMAL LINKS (Home, Shop ⌵, Contact Us) ── */}
             <nav style={{ display: "flex", alignItems: "center", gap: 32, flex: 1 }} className="hidden md:flex">
@@ -608,22 +609,115 @@ export function AppLayout() {
                 )}
               </button>
 
-              {/* Mobile Hamburger Toggle */}
+            </div>
+
+          </div>
+
+          {/* ── MOBILE TASKBAR (Phone View: Logo Left, Name Middle, 3-Line Dropdown Right) ── */}
+          <div
+            className="flex md:hidden"
+            style={{
+              height: 62,
+              alignItems: "center",
+              justifyContent: "space-between",
+              position: "relative",
+              width: "100%",
+            }}
+          >
+            {/* 1. Logo at the Left Corner */}
+            <div style={{ zIndex: 2, display: "flex", alignItems: "center" }}>
+              <NavLink to="/" style={{ display: "flex", alignItems: "center" }} aria-label="Elanora Boutique Home">
+                <img
+                  src="/elanora-emblem.png"
+                  alt="Elanora Logo"
+                  style={{
+                    height: 38,
+                    width: "auto",
+                    objectFit: "contain",
+                    filter: "drop-shadow(0 2px 8px rgba(201, 163, 74, 0.4))",
+                  }}
+                />
+              </NavLink>
+            </div>
+
+            {/* 2. Brand Name in the Middle */}
+            <div
+              style={{
+                position: "absolute",
+                left: "50%",
+                transform: "translateX(-50%)",
+                textAlign: "center",
+                pointerEvents: "auto",
+                zIndex: 1,
+              }}
+            >
+              <NavLink to="/" style={{ textDecoration: "none", display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1.1 }}>
+                <span
+                  className="gold-metallic-text"
+                  style={{
+                    fontFamily: "var(--font-brand)",
+                    fontSize: "1.25rem",
+                    fontWeight: 600,
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  ELANORA
+                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 1 }}>
+                  <span style={{ width: 8, height: 1, background: "rgba(201, 163, 74, 0.5)" }} />
+                  <span
+                    style={{
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "0.52rem",
+                      fontWeight: 600,
+                      letterSpacing: "0.26em",
+                      color: "#EB89A4",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    BOUTIQUE
+                  </span>
+                  <span style={{ width: 8, height: 1, background: "rgba(201, 163, 74, 0.5)" }} />
+                </div>
+              </NavLink>
+            </div>
+
+            {/* 3. Three-Line Drop Down on the Right */}
+            <div style={{ zIndex: 2, display: "flex", alignItems: "center" }}>
               <button
-                className="md:hidden"
+                type="button"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 style={{
                   background: "none",
                   border: "none",
                   cursor: "pointer",
-                  color: "#FFFFFF",
-                  padding: 4,
+                  color: mobileMenuOpen ? "#C9A34A" : "#FFFFFF",
+                  padding: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  position: "relative",
                 }}
+                aria-label="Toggle navigation menu"
               >
-                {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+                {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                {(cartCount > 0 || wishlistCount > 0) && !mobileMenuOpen && (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: 6,
+                      right: 6,
+                      width: 7,
+                      height: 7,
+                      borderRadius: "50%",
+                      background: "#C9A34A",
+                      boxShadow: "0 0 6px #C9A34A",
+                    }}
+                  />
+                )}
               </button>
             </div>
-
           </div>
         </div>
 
@@ -794,6 +888,57 @@ export function AppLayout() {
               className="md:hidden"
             >
               <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
+                {/* Search & Shopping Bag Quick Actions */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 4 }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      setSearchModalOpen(true);
+                    }}
+                    style={{
+                      background: "rgba(255,255,255,0.06)",
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      borderRadius: 8,
+                      padding: "10px 14px",
+                      color: "#FFFFFF",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      fontSize: "0.82rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <Search size={15} color="#C9A34A" />
+                    <span>Search</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      toggleCart();
+                    }}
+                    style={{
+                      background: "rgba(255,255,255,0.06)",
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      borderRadius: 8,
+                      padding: "10px 14px",
+                      color: "#FFFFFF",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      fontSize: "0.82rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <ShoppingBag size={15} color="#C9A34A" />
+                    <span>Bag ({cartCount})</span>
+                  </button>
+                </div>
+
                 <NavLink
                   to="/"
                   style={{ color: isHomeActive ? "#C9A34A" : "#FFFFFF", textDecoration: "none", fontSize: "1rem", fontFamily: "var(--font-serif)" }}

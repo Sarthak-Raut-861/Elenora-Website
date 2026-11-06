@@ -28,6 +28,7 @@ from app.api import (
     routers_return,
     routers_tracking,
     routers_users,
+    routers_offers,
 )
 
 
@@ -183,6 +184,7 @@ api_router.include_router(routers_payment.router)
 api_router.include_router(routers_dry_cleaning.router)
 api_router.include_router(routers_tracking.router)
 api_router.include_router(routers_contact.router)
+api_router.include_router(routers_offers.router)
 
 @api_router.get("/health", tags=["Health"])
 async def api_health_check():
@@ -203,6 +205,8 @@ app.include_router(routers_payment.router)
 app.include_router(routers_dry_cleaning.router)
 app.include_router(routers_tracking.router)
 app.include_router(routers_contact.router)
+app.include_router(routers_offers.router)
+
 
 
 @app.get("/", tags=["Health"])

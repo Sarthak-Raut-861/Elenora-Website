@@ -21,8 +21,9 @@ import { api } from "../api";
 import { useAuth } from "../auth-context";
 import { useWishlist } from "../wishlist-context";
 import { AssetBookingModal } from "../components/AssetBookingModal";
-import type { Asset, Category } from "../types";
+import type { Asset, Category, Offer } from "../types";
 import { formatINR } from "../utils/currency";
+import { getAssetPricing } from "../utils/offers";
 
 export function AssetsPage() {
   const navigate = useNavigate();
@@ -78,6 +79,12 @@ export function AssetsPage() {
     queryFn: () => api.listAssets(token),
   });
   const assets = Array.isArray(rawAssets) ? rawAssets : [];
+
+  const { data: rawOffers = [] } = useQuery<Offer[]>({
+    queryKey: ["public-active-offers"],
+    queryFn: () => api.listActiveOffers(),
+  });
+  const activeOffers = Array.isArray(rawOffers) ? rawOffers : [];
 
   // Filter assets by search, category, and Rent vs Buy section
   const filteredAssets = assets.filter((asset) => {
@@ -353,6 +360,7 @@ export function AssetsPage() {
             const rentPrice = formatINR(asset.rental_price || 2899);
             const isOutOfStock = prod.availableStock === 0;
             const targetUnitForBooking = prod.availableUnits[0] || asset;
+            const pricing = getAssetPricing(asset, activeOffers);
 
             return (
               <motion.div
@@ -378,8 +386,25 @@ export function AssetsPage() {
                     onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                   />
 
-                  {/* Section Badge */}
+                  {/* Section Badge & Offer Badge */}
                   <div style={{ position: "absolute", top: 14, left: 14, zIndex: 5, display: "flex", flexDirection: "column", gap: 6 }}>
+                    {pricing.hasOffer && pricing.offerBadge && (
+                      <span
+                        style={{
+                          padding: "3px 10px",
+                          borderRadius: "9999px",
+                          fontSize: "0.66rem",
+                          fontWeight: 800,
+                          letterSpacing: "0.08em",
+                          background: "linear-gradient(135deg, #ECC880, #C9A34A)",
+                          color: "#0B0B0B",
+                          textTransform: "uppercase",
+                          boxShadow: "0 2px 10px rgba(0,0,0,0.5)",
+                        }}
+                      >
+                        {pricing.offerBadge}
+                      </span>
+                    )}
                     <span
                       style={{
                         padding: "4px 12px",
@@ -501,9 +526,20 @@ export function AssetsPage() {
                           <span style={{ fontSize: "0.68rem", color: "var(--color-text-faint)", textTransform: "uppercase", display: "block" }}>
                             Buy Price
                           </span>
-                          <span style={{ fontSize: "0.95rem", fontWeight: 700, color: "#FFFFFF" }}>
-                            {buyPrice}
-                          </span>
+                          {pricing.offerBuy ? (
+                            <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                              <span style={{ fontSize: "0.82rem", textDecoration: "line-through", color: "#888" }}>
+                                {buyPrice}
+                              </span>
+                              <span style={{ fontSize: "1rem", fontWeight: 800, color: "#C9A34A" }}>
+                                {formatINR(pricing.offerBuy)}
+                              </span>
+                            </div>
+                          ) : (
+                            <span style={{ fontSize: "0.95rem", fontWeight: 700, color: "#FFFFFF" }}>
+                              {buyPrice}
+                            </span>
+                          )}
                         </div>
                       )}
 
@@ -516,9 +552,20 @@ export function AssetsPage() {
                           <span style={{ fontSize: "0.68rem", color: "var(--color-text-faint)", textTransform: "uppercase", display: "block" }}>
                             Rental Price
                           </span>
-                          <span style={{ fontSize: "1.05rem", fontWeight: 800, color: "#C9A34A" }}>
-                            {rentPrice}<span style={{ fontSize: "0.75rem", fontWeight: 500 }}>/day</span>
-                          </span>
+                          {pricing.offerRent ? (
+                            <div style={{ display: "flex", alignItems: "baseline", justifyContent: isBuyable ? "flex-end" : "flex-start", gap: 6 }}>
+                              <span style={{ fontSize: "0.82rem", textDecoration: "line-through", color: "#888" }}>
+                                {rentPrice}
+                              </span>
+                              <span style={{ fontSize: "1.05rem", fontWeight: 800, color: "#C9A34A" }}>
+                                {formatINR(pricing.offerRent)}<span style={{ fontSize: "0.75rem", fontWeight: 500 }}>/day</span>
+                              </span>
+                            </div>
+                          ) : (
+                            <span style={{ fontSize: "1.05rem", fontWeight: 800, color: "#C9A34A" }}>
+                              {rentPrice}<span style={{ fontSize: "0.75rem", fontWeight: 500 }}>/day</span>
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>

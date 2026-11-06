@@ -9,3 +9,19 @@ from app.models.allocations import Allocation
 from app.models.returns import Return
 from app.models.dry_cleaning import DryCleaningRequest
 from app.models.tracking import TrackingEvent
+from app.models.offer import Offer
+
+__all__ = [
+    "User",
+    "RefreshToken",
+    "RentalPlan",
+    "Category",
+    "Asset",
+    "Booking",
+    "Payment",
+    "Allocation",
+    "Return",
+    "DryCleaningRequest",
+    "TrackingEvent",
+    "Offer",
+]

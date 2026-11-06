@@ -21,6 +21,8 @@ import type {
   UserHistoryResponse,
   TrackingPageData,
   RecentActivityItem,
+  Offer,
+  OfferCreatePayload,
 } from './types'
 
 const API_BASE_URL =
@@ -452,4 +454,16 @@ export const api = {
     request<TrackingPageData>(`/tracking/bookings/${bookingId}`, { token }),
   getRecentActivity: (token: string, limit = 10) =>
     request<RecentActivityItem[]>(`/tracking/admin/recent-activity?limit=${limit}`, { token }),
+
+  // Special Offers
+  listOffers: (token?: string, includeInactive = true) =>
+    request<Offer[]>(`/offers/?include_inactive=${includeInactive}`, { token }),
+  listActiveOffers: () =>
+    request<Offer[]>('/offers/active'),
+  createOffer: (payload: OfferCreatePayload, token: string) =>
+    request<Offer>('/offers/', { method: 'POST', body: payload, token }),
+  updateOffer: (id: number, payload: Partial<OfferCreatePayload>, token: string) =>
+    request<Offer>(`/offers/${id}`, { method: 'PATCH', body: payload, token }),
+  deleteOffer: (id: number, token: string) =>
+    request<void>(`/offers/${id}`, { method: 'DELETE', token }),
 }

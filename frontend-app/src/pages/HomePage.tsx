@@ -24,8 +24,9 @@ import { useAuth } from "../auth-context";
 import { useWishlist } from "../wishlist-context";
 import { AssetBookingModal } from "../components/AssetBookingModal";
 import { BoutiqueAddressShowcase } from "../components/BoutiqueAddressShowcase";
-import type { Asset, Category } from "../types";
+import type { Asset, Category, Offer } from "../types";
 import { formatINR } from "../utils/currency";
+import { getAssetPricing } from "../utils/offers";
 
 // ── Hero Slides (Matching Rozina Editorial Standard) ──
 const HERO_SLIDES = [
@@ -193,6 +194,12 @@ export function HomePage() {
     queryKey: ["home-categories"],
     queryFn: () => api.listCategories(token),
   });
+
+  const { data: rawOffers = [] } = useQuery<Offer[]>({
+    queryKey: ["public-active-offers"],
+    queryFn: () => api.listActiveOffers(),
+  });
+  const activeOffers = Array.isArray(rawOffers) ? rawOffers : [];
 
   const assets = Array.isArray(rawAssets) ? rawAssets : [];
   const categories = Array.isArray(rawCategories) ? rawCategories : [];
@@ -660,6 +667,7 @@ export function HomePage() {
               const buyPrice = formatINR(asset.buy_price || 38000);
               const rentPrice = formatINR(asset.rental_price || 2899);
               const lType = asset.listing_type || "both";
+              const pricing = getAssetPricing(asset, activeOffers);
 
               return (
                 <motion.div
@@ -700,8 +708,25 @@ export function HomePage() {
                       onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                     />
 
-                    {/* Section Badge (Rent vs Buy) */}
-                    <div style={{ position: "absolute", top: 12, left: 12, zIndex: 5 }}>
+                    {/* Section Badge (Rent vs Buy) + Offer Badge */}
+                    <div style={{ position: "absolute", top: 12, left: 12, zIndex: 5, display: "flex", flexDirection: "column", gap: 6 }}>
+                      {pricing.hasOffer && pricing.offerBadge && (
+                        <span
+                          style={{
+                            padding: "3px 10px",
+                            borderRadius: "9999px",
+                            fontSize: "0.64rem",
+                            fontWeight: 800,
+                            letterSpacing: "0.08em",
+                            background: "linear-gradient(135deg, #ECC880, #C9A34A)",
+                            color: "#0B0B0B",
+                            textTransform: "uppercase",
+                            boxShadow: "0 2px 10px rgba(0,0,0,0.5)",
+                          }}
+                        >
+                          {pricing.offerBadge}
+                        </span>
+                      )}
                       <span
                         style={{
                           padding: "4px 12px",
@@ -785,18 +810,40 @@ export function HomePage() {
                         {lType !== "rent" && (
                           <div>
                             <span style={{ fontSize: "0.66rem", color: "#888", display: "block" }}>Buy to Own</span>
-                            <span style={{ fontSize: "0.95rem", fontWeight: 700, color: "#FFFFFF" }}>
-                              {buyPrice}
-                            </span>
+                            {pricing.offerBuy ? (
+                              <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                                <span style={{ fontSize: "0.82rem", textDecoration: "line-through", color: "#888" }}>
+                                  {buyPrice}
+                                </span>
+                                <span style={{ fontSize: "1rem", fontWeight: 800, color: "#C9A34A" }}>
+                                  {formatINR(pricing.offerBuy)}
+                                </span>
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: "0.95rem", fontWeight: 700, color: "#FFFFFF" }}>
+                                {buyPrice}
+                              </span>
+                            )}
                           </div>
                         )}
 
                         {lType !== "buy" && (
                           <div style={{ textAlign: lType === "both" ? "right" : "left" }}>
                             <span style={{ fontSize: "0.66rem", color: "#888", display: "block" }}>Rental Rate</span>
-                            <span style={{ fontSize: "1.05rem", fontWeight: 800, color: "#C9A34A" }}>
-                              {rentPrice}<span style={{ fontSize: "0.72rem", fontWeight: 500 }}>/day</span>
-                            </span>
+                            {pricing.offerRent ? (
+                              <div style={{ display: "flex", alignItems: "baseline", justifyContent: lType === "both" ? "flex-end" : "flex-start", gap: 6 }}>
+                                <span style={{ fontSize: "0.82rem", textDecoration: "line-through", color: "#888" }}>
+                                  {rentPrice}
+                                </span>
+                                <span style={{ fontSize: "1.05rem", fontWeight: 800, color: "#C9A34A" }}>
+                                  {formatINR(pricing.offerRent)}<span style={{ fontSize: "0.72rem", fontWeight: 500 }}>/day</span>
+                                </span>
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: "1.05rem", fontWeight: 800, color: "#C9A34A" }}>
+                                {rentPrice}<span style={{ fontSize: "0.72rem", fontWeight: 500 }}>/day</span>
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
@@ -922,6 +969,7 @@ export function HomePage() {
                 const lType = asset.listing_type || "both";
                 const isBuyable = lType !== "rent";
                 const isRentable = lType !== "buy";
+                const pricing = getAssetPricing(asset, activeOffers);
 
                 return (
                   <motion.div
@@ -949,7 +997,24 @@ export function HomePage() {
                         onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.06)")}
                         onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                       />
-                      <div style={{ position: "absolute", top: 10, left: 10, zIndex: 5 }}>
+                      <div style={{ position: "absolute", top: 10, left: 10, zIndex: 5, display: "flex", flexDirection: "column", gap: 6 }}>
+                        {pricing.hasOffer && pricing.offerBadge && (
+                          <span
+                            style={{
+                              padding: "3px 10px",
+                              borderRadius: "9999px",
+                              fontSize: "0.62rem",
+                              fontWeight: 800,
+                              letterSpacing: "0.08em",
+                              background: "linear-gradient(135deg, #ECC880, #C9A34A)",
+                              color: "#0B0B0B",
+                              textTransform: "uppercase",
+                              boxShadow: "0 2px 10px rgba(0,0,0,0.5)",
+                            }}
+                          >
+                            {pricing.offerBadge}
+                          </span>
+                        )}
                         <span
                           style={{
                             padding: "3px 10px",
@@ -990,14 +1055,31 @@ export function HomePage() {
                       <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <div>
                           {isBuyable && (
-                            <span style={{ fontSize: "0.64rem", color: "#888", display: "block" }}>
-                              Buy: {buyPrice}
-                            </span>
+                            <div style={{ fontSize: "0.64rem", color: "#888", display: "block" }}>
+                              Buy:{" "}
+                              {pricing.offerBuy ? (
+                                <>
+                                  <span style={{ textDecoration: "line-through", marginRight: 4 }}>{buyPrice}</span>
+                                  <span style={{ color: "#FFFFFF", fontWeight: 700 }}>{formatINR(pricing.offerBuy)}</span>
+                                </>
+                              ) : (
+                                buyPrice
+                              )}
+                            </div>
                           )}
                           {isRentable && (
-                            <span style={{ fontSize: "0.95rem", color: "#C9A34A", fontWeight: 800 }}>
-                              Rent: {rentPrice}<span style={{ fontSize: "0.7rem", fontWeight: 500 }}>/day</span>
-                            </span>
+                            <div style={{ fontSize: "0.95rem", color: "#C9A34A", fontWeight: 800 }}>
+                              Rent:{" "}
+                              {pricing.offerRent ? (
+                                <>
+                                  <span style={{ textDecoration: "line-through", color: "#888", marginRight: 6, fontSize: "0.8rem" }}>{rentPrice}</span>
+                                  <span>{formatINR(pricing.offerRent)}</span>
+                                </>
+                              ) : (
+                                rentPrice
+                              )}
+                              <span style={{ fontSize: "0.7rem", fontWeight: 500 }}>/day</span>
+                            </div>
                           )}
                         </div>
 

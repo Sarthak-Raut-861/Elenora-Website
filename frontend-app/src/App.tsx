@@ -1,7 +1,8 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Suspense, lazy, type ReactElement } from "react";
 import { AuthProvider, useAuth } from "./auth-context";
-import { WishlistProvider } from "./wishlist-context";
+import { WishlistProvider } from "./wishlist-context";
+
 import { CartProvider } from "./cart-context";
 import { AppLayout } from "./components/AppLayout";
 import { AdminLayout } from "./layouts/AdminLayout";
@@ -13,7 +14,8 @@ const LoginPage = lazy(() => import("./pages/LoginPage").then((m) => ({ default:
 const RegisterPage = lazy(() => import("./pages/RegisterPage").then((m) => ({ default: m.RegisterPage })));
 const AssetsPage = lazy(() => import("./pages/AssetsPage").then((m) => ({ default: m.AssetsPage })));
 const AssetDetailPage = lazy(() => import("./pages/AssetDetailPage").then((m) => ({ default: m.AssetDetailPage })));
-const WishlistPage = lazy(() => import("./pages/WishlistPage").then((m) => ({ default: m.WishlistPage })));
+const WishlistPage = lazy(() => import("./pages/WishlistPage").then((m) => ({ default: m.WishlistPage })));
+
 const CartPage = lazy(() => import("./pages/CartPage").then((m) => ({ default: m.CartPage })));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage").then((m) => ({ default: m.CheckoutPage })));
 const BookingsPage = lazy(() => import("./pages/BookingsPage").then((m) => ({ default: m.BookingsPage })));
@@ -32,6 +34,7 @@ const AdminOperationsPage = lazy(() =>
   import("./pages/admin/Operations").then((m) => ({ default: m.AdminOperationsPage }))
 );
 const AdminPlansPage = lazy(() => import("./pages/admin/Plans").then((m) => ({ default: m.AdminPlansPage })));
+const AdminOffersPage = lazy(() => import("./pages/admin/Offers").then((m) => ({ default: m.AdminOffersPage })));
 const AdminUsersPage = lazy(() => import("./pages/admin/Users").then((m) => ({ default: m.AdminUsersPage })));
 const AdminDashboardPage = lazy(() => import("./pages/admin/Dashboard").then((m) => ({ default: m.AdminDashboardPage })));
 const AdminDryCleaningPage = lazy(() => import("./pages/admin/DryCleaning").then((m) => ({ default: m.AdminDryCleaningPage })));
@@ -113,6 +116,7 @@ function AppRoutes() {
           <Route path="assets" element={<AdminAssetsPage />} />
           <Route path="categories" element={<AdminCategoriesPage />} />
           <Route path="plans" element={<AdminPlansPage />} />
+          <Route path="offers" element={<AdminOffersPage />} />
           <Route path="users" element={<AdminUsersPage />} />
           <Route path="ops" element={<AdminOperationsPage />} />
           <Route path="dry-cleaning" element={<AdminDryCleaningPage />} />
@@ -139,7 +143,8 @@ function AppRoutes() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/assets" element={<AssetsPage />} />
           <Route path="/assets/:id" element={<AssetDetailPage />} />
-          <Route path="/wishlist" element={<WishlistPage />} />
+          <Route path="/wishlist" element={<WishlistPage />} />
+
           <Route path="/cart" element={<CartPage />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route

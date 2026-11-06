@@ -11,6 +11,11 @@ from app.main import app
 
 @pytest_asyncio.fixture
 async def client():
+    from app.db.base import Base
+    from app.db.session import engine
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac

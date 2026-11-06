@@ -342,3 +342,42 @@ export interface BuyOrderPayload {
   shipping_address?: string
   contact_phone?: string
 }
+
+// ── Special Offers ────────────────────────────────────────────────────────────
+
+export interface Offer {
+  id: number
+  title: string
+  description?: string | null
+  scope: 'sitewide' | 'category' | 'asset'
+  category_id?: number | null
+  asset_id?: number | null
+  apply_to: 'both' | 'buy' | 'rent'
+  discount_type: 'percentage' | 'fixed_amount' | 'custom_price'
+  discount_value: number
+  custom_buy_price?: number | null
+  custom_rental_price?: number | null
+  badge_text: string
+  is_active: boolean
+  created_at: string
+  expires_at?: string | null
+  category_name?: string | null
+  asset_name?: string | null
+}
+
+export interface OfferCreatePayload {
+  title: string
+  description?: string
+  scope: 'sitewide' | 'category' | 'asset'
+  category_id?: number | null
+  asset_id?: number | null
+  apply_to: 'both' | 'buy' | 'rent'
+  discount_type: 'percentage' | 'fixed_amount' | 'custom_price'
+  discount_value: number
+  custom_buy_price?: number | null
+  custom_rental_price?: number | null
+  badge_text: string
+  is_active: boolean
+  expires_at?: string | null
+}
+

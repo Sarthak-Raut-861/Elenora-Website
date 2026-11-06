@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { Wrench, Package2, Tag, ClipboardList, Users, LogOut, Bell, Shirt, Crown, LayoutDashboard, ExternalLink } from "lucide-react";
+import { Wrench, Package2, Tag, ClipboardList, Users, LogOut, Bell, Shirt, Crown, LayoutDashboard, ExternalLink, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "../auth-context";
 import { useQuery } from "@tanstack/react-query";
@@ -11,6 +11,7 @@ const adminNav = [
   { to: "/admin/assets",       label: "Product Manifest", icon: Package2 },
   { to: "/admin/categories",   label: "Categories",     icon: Tag },
   { to: "/admin/plans",        label: "Rental Plans",   icon: ClipboardList },
+  { to: "/admin/offers",       label: "Special Offers", icon: Sparkles },
   { to: "/admin/users",        label: "Customers & Staff", icon: Users },
   { to: "/admin/dry-cleaning", label: "Laundry Tracking", icon: Shirt, badgeKey: "dc" },
 ];

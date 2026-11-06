@@ -35,20 +35,23 @@ const HERO_SLIDES = [
     sub: "The Royal Bridal & Festive Couture Edit",
     cta: "SHOP NOW",
     to: "/assets",
+    position: "center 30%",
   },
   {
-    image: "https://images.unsplash.com/photo-1594552072238-b8a33785b261?auto=format&fit=crop&w=1920&q=85",
+    image: "/hero-rental-blue-lehenga-banner.jpg",
     title: "The Rental Vault",
-    sub: "Wear Multi-Lakh Designer Outfits For Your Special Occasions",
+    sub: "Wear Multi-Lakh Handcrafted Designer Lehengas & Royal Ensembles For Your Special Occasions",
     cta: "EXPLORE RENTALS",
     to: "/assets?type=rent",
+    position: "center center",
   },
   {
-    image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=1920&q=85",
+    image: "/hero-readytowear-cream-gown-banner.jpg",
     title: "Ready-To-Wear",
-    sub: "Own Handcrafted Banarasi, Chikankari & Festive Heirlooms",
+    sub: "Own Sculpted Champagne Gowns, Evening Ensembles & Contemporary Red Carpet Silhouettes",
     cta: "BUY COLLECTION",
     to: "/assets?type=buy",
+    position: "center center",
   },
 ];
 
@@ -383,7 +386,7 @@ export function HomePage() {
               inset: 0,
               backgroundImage: `linear-gradient(to top, rgba(11,11,11,0.92) 0%, rgba(11,11,11,0.35) 45%, rgba(11,11,11,0.65) 100%), url('${slide.image}')`,
               backgroundSize: "cover",
-              backgroundPosition: "center 30%",
+              backgroundPosition: (slide as any).position || "center 30%",
             }}
           />
         </AnimatePresence>

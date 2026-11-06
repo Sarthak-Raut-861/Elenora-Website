@@ -36,22 +36,25 @@ const HERO_SLIDES = [
     cta: "SHOP NOW",
     to: "/assets",
     position: "center 30%",
+    align: "center",
   },
   {
-    image: "/hero-rental-blue-lehenga-banner.jpg?v=2",
+    image: "/hero-rental-blue-lehenga-banner.jpg?v=4",
     title: "The Rental Vault",
     sub: "Wear Multi-Lakh Handcrafted Designer Lehengas & Royal Ensembles For Your Special Occasions",
     cta: "EXPLORE RENTALS",
     to: "/assets?type=rent",
     position: "center center",
+    align: "left",
   },
   {
-    image: "/hero-readytowear-cream-gown-banner.jpg?v=2",
+    image: "/hero-readytowear-cream-gown-banner.jpg?v=4",
     title: "Ready-To-Wear",
     sub: "Own Sculpted Champagne Gowns, Evening Ensembles & Contemporary Red Carpet Silhouettes",
     cta: "BUY COLLECTION",
     to: "/assets?type=buy",
     position: "center center",
+    align: "left",
   },
 ];
 
@@ -384,120 +387,127 @@ export function HomePage() {
             style={{
               position: "absolute",
               inset: 0,
-              backgroundImage: `linear-gradient(to top, rgba(11,11,11,0.92) 0%, rgba(11,11,11,0.35) 45%, rgba(11,11,11,0.65) 100%), url('${slide.image}')`,
+              backgroundImage: (slide as any).align === "left"
+                ? `linear-gradient(to right, rgba(11,11,11,0.94) 0%, rgba(11,11,11,0.72) 42%, rgba(11,11,11,0.12) 68%, transparent 100%), linear-gradient(to top, rgba(11,11,11,0.88) 0%, transparent 40%, rgba(11,11,11,0.6) 100%), url('${slide.image}')`
+                : `linear-gradient(to top, rgba(11,11,11,0.92) 0%, rgba(11,11,11,0.35) 45%, rgba(11,11,11,0.65) 100%), url('${slide.image}')`,
               backgroundSize: "cover",
               backgroundPosition: (slide as any).position || "center 30%",
             }}
           />
         </AnimatePresence>
 
-        {/* Center Hero Overlay Content (Matching Rozina Typography) */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            textAlign: "center",
-            padding: "0 20px",
-            zIndex: 10,
-          }}
-        >
-          <motion.div
-            key={`content-${currentSlide}`}
-            initial={{ opacity: 0, y: 22 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            style={{ maxWidth: 860 }}
-          >
-            <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-              <span style={{ width: 32, height: 1, background: "linear-gradient(90deg, transparent, #C9A34A)" }} />
-              <span
-                style={{
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "0.76rem",
-                  letterSpacing: "0.26em",
-                  color: "#C9A34A",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                }}
-              >
-                ELANORA ATELIER • AUTUMN / FESTIVE 2026
-              </span>
-              <span style={{ width: 32, height: 1, background: "linear-gradient(90deg, #C9A34A, transparent)" }} />
-            </div>
-
-            <h1
-              className="gold-metallic-text"
+        {/* Hero Overlay Content (Matching Rozina Typography) */}
+        {(() => {
+          const isLeft = (slide as any).align === "left";
+          return (
+            <div
               style={{
-                fontFamily: "var(--font-brand)",
-                fontSize: "clamp(3rem, 6.5vw, 5.2rem)",
-                fontWeight: 600,
-                letterSpacing: "0.08em",
-                margin: "0 0 14px",
-                lineHeight: 1.08,
-                textTransform: "uppercase",
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: isLeft ? "flex-start" : "center",
+                justifyContent: "center",
+                textAlign: isLeft ? "left" : "center",
+                padding: isLeft ? "0 clamp(32px, 8vw, 140px)" : "0 20px",
+                zIndex: 10,
               }}
             >
-              {slide.title}
-            </h1>
-
-            <p
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontSize: "clamp(0.92rem, 1.6vw, 1.15rem)",
-                color: "rgba(255, 255, 255, 0.88)",
-                margin: "0 0 36px",
-                letterSpacing: "0.06em",
-                fontWeight: 400,
-              }}
-            >
-              {slide.sub}
-            </p>
-
-            {/* Clean Translucent Glassmorphism Button (Rozina Standard) */}
-            <div>
-              <button
-                onClick={() => navigate(slide.to)}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: "13px 44px",
-                  background: "rgba(255, 255, 255, 0.12)",
-                  backdropFilter: "blur(14px)",
-                  border: "1px solid rgba(255, 255, 255, 0.35)",
-                  borderRadius: "9999px",
-                  color: "#FFFFFF",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "0.82rem",
-                  fontWeight: 600,
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  cursor: "pointer",
-                  transition: "all 0.3s ease",
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#FFFFFF";
-                  e.currentTarget.style.color = "#0B0B0B";
-                  e.currentTarget.style.borderColor = "#FFFFFF";
-                  e.currentTarget.style.boxShadow = "0 8px 30px rgba(255, 255, 255, 0.35)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
-                  e.currentTarget.style.color = "#FFFFFF";
-                  e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.35)";
-                  e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.5)";
-                }}
+              <motion.div
+                key={`content-${currentSlide}`}
+                initial={{ opacity: 0, y: 22 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                style={{ maxWidth: isLeft ? 640 : 860 }}
               >
-                {slide.cta}
-              </button>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                  <span style={{ width: 32, height: 1, background: "linear-gradient(90deg, transparent, #C9A34A)" }} />
+                  <span
+                    style={{
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "0.76rem",
+                      letterSpacing: "0.26em",
+                      color: "#C9A34A",
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    ELANORA ATELIER • AUTUMN / FESTIVE 2026
+                  </span>
+                  {!isLeft && <span style={{ width: 32, height: 1, background: "linear-gradient(90deg, #C9A34A, transparent)" }} />}
+                </div>
+
+                <h1
+                  className="gold-metallic-text"
+                  style={{
+                    fontFamily: "var(--font-brand)",
+                    fontSize: "clamp(2.8rem, 5.5vw, 4.8rem)",
+                    fontWeight: 600,
+                    letterSpacing: "0.08em",
+                    margin: "0 0 14px",
+                    lineHeight: 1.08,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {slide.title}
+                </h1>
+
+                <p
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "clamp(0.92rem, 1.6vw, 1.15rem)",
+                    color: "rgba(255, 255, 255, 0.88)",
+                    margin: "0 0 36px",
+                    letterSpacing: "0.06em",
+                    fontWeight: 400,
+                  }}
+                >
+                  {slide.sub}
+                </p>
+
+                {/* Clean Translucent Glassmorphism Button (Rozina Standard) */}
+                <div>
+                  <button
+                    onClick={() => navigate(slide.to)}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "13px 44px",
+                      background: "rgba(255, 255, 255, 0.12)",
+                      backdropFilter: "blur(14px)",
+                      border: "1px solid rgba(255, 255, 255, 0.35)",
+                      borderRadius: "9999px",
+                      color: "#FFFFFF",
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "0.82rem",
+                      fontWeight: 600,
+                      letterSpacing: "0.18em",
+                      textTransform: "uppercase",
+                      cursor: "pointer",
+                      transition: "all 0.3s ease",
+                      boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = "#FFFFFF";
+                      e.currentTarget.style.color = "#0B0B0B";
+                      e.currentTarget.style.borderColor = "#FFFFFF";
+                      e.currentTarget.style.boxShadow = "0 8px 30px rgba(255, 255, 255, 0.35)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = "rgba(255, 255, 255, 0.12)";
+                      e.currentTarget.style.color = "#FFFFFF";
+                      e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.35)";
+                      e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.5)";
+                    }}
+                  >
+                    {slide.cta}
+                  </button>
+                </div>
+              </motion.div>
             </div>
-          </motion.div>
-        </div>
+          );
+        })()}
 
         {/* Bottom Slider Controls: < • ∘ ∘ > || (Exact Rozina Layout) */}
         <div

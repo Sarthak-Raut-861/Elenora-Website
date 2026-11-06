@@ -143,14 +143,15 @@ async def register(
         auth_logger.warning(f"Registration failed: Email already registered {clean_email}")
         raise HTTPException(status_code=400, detail="Email is already registered")
 
-    user_role = UserRole.admin if clean_email in {"admin@elanora-luxury.com", "sarthakraut1484@gmail.com"} else UserRole.user
     clean_phone = clean_phone_number(data.phone) if data.phone else None
 
+    # Every newly registered account is ALWAYS created as a normal user (Client Patron).
+    # The Super Administrator can later reassign roles in the /admin/users console.
     user = User(
         full_name=data.full_name.strip(),
         email=clean_email,
         password_hash=hash_password(data.password),
-        role=user_role,
+        role=UserRole.user,
         phone=clean_phone,
         is_active=True,
     )
@@ -158,7 +159,7 @@ async def register(
     await db.commit()
     await db.refresh(user)
 
-    auth_logger.info(f"User registered successfully: {user.email} (ID: {user.id}, Phone: {user.phone})")
+    auth_logger.info(f"User registered successfully as normal user: {user.email} (ID: {user.id}, Phone: {user.phone})")
     return user
 
 
@@ -191,9 +192,12 @@ async def login(
         auth_logger.warning(f"Failed login attempt: User not found for {clean_email}")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
 
-    # Verify password against stored hash OR master admin password if admin/superadmin
+    # Verify password against stored hash (never alter or promote user role on login)
     is_valid = verify_password(data.password, user.password_hash)
-    if not is_valid and (user.role == UserRole.admin or clean_email in {"admin@elanora-luxury.com", "sarthakraut1484@gmail.com", "sarthak1484@gmail.com"}):
+
+    # Emergency fallback ONLY for root system concierge account
+    root_concierge_email = (settings.ADMIN_EMAIL or "admin@elanora-luxury.com").lower()
+    if not is_valid and clean_email == root_concierge_email:
         if data.password in (settings.ADMIN_PASSWORD, "AdminPassword123!"):
             is_valid = True
             user.password_hash = hash_password(data.password)

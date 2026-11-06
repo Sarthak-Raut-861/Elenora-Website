@@ -285,7 +285,7 @@ async def test_security_and_business_rules(client):
     assert verify_otp_res.json()["verified"] is True
 
     # 8. User Role Modification & Deletion Flow
-    # Create a dummy user
+    # Create a dummy user - MUST always register as normal user
     dummy_reg = await client.post(
         "/auth/register",
         json={
@@ -297,6 +297,16 @@ async def test_security_and_business_rules(client):
     )
     assert dummy_reg.status_code == 201
     dummy_user = dummy_reg.json()
+    assert dummy_user["role"] == "user"
+
+    # Login check: user remains normal user
+    login_dummy = await client.post(
+        "/auth/login",
+        json={"email": "role.change.test@example.com", "password": "Password123!"}
+    )
+    assert login_dummy.status_code == 200
+    me_dummy = await client.get("/users/me", headers={"Authorization": f"Bearer {login_dummy.json()['access_token']}"})
+    assert me_dummy.json()["role"] == "user"
 
     # Admin changes role to staff
     role_change_res = await client.patch(

@@ -38,7 +38,7 @@ const HERO_SLIDES = [
     position: "center 30%",
   },
   {
-    image: "/hero-rental-blue-lehenga-banner.jpg",
+    image: "/hero-rental-blue-lehenga-banner.jpg?v=2",
     title: "The Rental Vault",
     sub: "Wear Multi-Lakh Handcrafted Designer Lehengas & Royal Ensembles For Your Special Occasions",
     cta: "EXPLORE RENTALS",
@@ -46,7 +46,7 @@ const HERO_SLIDES = [
     position: "center center",
   },
   {
-    image: "/hero-readytowear-cream-gown-banner.jpg",
+    image: "/hero-readytowear-cream-gown-banner.jpg?v=2",
     title: "Ready-To-Wear",
     sub: "Own Sculpted Champagne Gowns, Evening Ensembles & Contemporary Red Carpet Silhouettes",
     cta: "BUY COLLECTION",

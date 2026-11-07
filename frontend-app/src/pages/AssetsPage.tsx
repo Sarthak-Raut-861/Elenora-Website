@@ -123,6 +123,57 @@ export function AssetsPage() {
     return matchesSearch && matchesCategory && matchesType;
   });
 
+  // Helper to count unique outfits (grouped by name and category) from an asset list
+  const countUniqueOutfits = (list: Asset[]) => {
+    const seen = new Set<string>();
+    for (const a of list) {
+      const key = `${a.name.trim().toLowerCase()}__${a.category_id}`;
+      seen.add(key);
+    }
+    return seen.size;
+  };
+
+  // Base pool of assets filtered by category and search (before Rent vs Buy type filter)
+  const scopedAssets = useMemo(() => {
+    return assets.filter((asset) => {
+      let matchesCategory = true;
+      if (selectedCategory !== "all") {
+        const target = selectedCategory.toLowerCase().trim();
+        const catObj = categories.find(
+          (c) =>
+            c.name.toLowerCase().trim() === target ||
+            c.name.toLowerCase().includes(target) ||
+            target.includes(c.name.toLowerCase().trim())
+        );
+        if (catObj) {
+          matchesCategory = asset.category_id === catObj.id;
+        } else {
+          matchesCategory =
+            asset.name.toLowerCase().includes(target) ||
+            (asset.description || "").toLowerCase().includes(target);
+        }
+      }
+
+      const matchesSearch =
+        !searchTerm.trim() ||
+        asset.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        asset.asset_code.toLowerCase().includes(searchTerm.toLowerCase());
+
+      return matchesCategory && matchesSearch;
+    });
+  }, [assets, selectedCategory, categories, searchTerm]);
+
+  // Unique outfit counts for each listing-type pill (counts distinct outfits, not raw warehouse inventory units)
+  const allOutfitsCount = useMemo(() => countUniqueOutfits(scopedAssets), [scopedAssets]);
+  const rentOutfitsCount = useMemo(
+    () => countUniqueOutfits(scopedAssets.filter((a) => (a.listing_type || "both") !== "buy")),
+    [scopedAssets]
+  );
+  const buyOutfitsCount = useMemo(
+    () => countUniqueOutfits(scopedAssets.filter((a) => (a.listing_type || "both") !== "rent")),
+    [scopedAssets]
+  );
+
   // Group assets by piece name & category so that multiple physical units show as 1 clean product card
   const groupedProducts = useMemo(() => {
     const map = new Map<string, any>();
@@ -218,8 +269,9 @@ export function AssetsPage() {
                 color: selectedType === "all" ? "#0B0B0B" : "#A3A3A3",
                 boxShadow: selectedType === "all" ? "0 4px 14px rgba(201, 163, 74, 0.35)" : "none",
               }}
+              title={`${allOutfitsCount} unique outfits available`}
             >
-              ✨ All Collections ({assets.length})
+              ✨ All Collections ({allOutfitsCount})
             </button>
 
             <button
@@ -238,8 +290,9 @@ export function AssetsPage() {
                 color: selectedType === "rent" ? "#0B0B0B" : "#A3A3A3",
                 boxShadow: selectedType === "rent" ? "0 4px 16px rgba(201, 163, 74, 0.4)" : "none",
               }}
+              title={`${rentOutfitsCount} unique outfits for rent`}
             >
-              👗 Rent Vault ({assets.filter((a) => (a.listing_type || "both") !== "buy").length})
+              👗 Rent Vault ({rentOutfitsCount})
             </button>
 
             <button
@@ -258,8 +311,9 @@ export function AssetsPage() {
                 color: selectedType === "buy" ? "#0B0B0B" : "#A3A3A3",
                 boxShadow: selectedType === "buy" ? "0 4px 16px rgba(201, 163, 74, 0.4)" : "none",
               }}
+              title={`${buyOutfitsCount} unique outfits for purchase`}
             >
-              🛍️ Buy to Own ({assets.filter((a) => (a.listing_type || "both") !== "rent").length})
+              🛍️ Buy to Own ({buyOutfitsCount})
             </button>
           </div>
         </div>
@@ -351,6 +405,24 @@ export function AssetsPage() {
             <p style={{ color: "var(--color-text-muted)", fontSize: "0.85rem" }}>Curating couture vault...</p>
           </div>
         )}
+
+        {/* Unique Outfits Counter Header */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 20,
+            padding: "0 4px",
+          }}
+        >
+          <span style={{ fontSize: "0.85rem", color: "var(--color-text-muted)", letterSpacing: "0.02em" }}>
+            Showing <strong style={{ color: "#C9A34A", fontWeight: 700 }}>{groupedProducts.length}</strong> {groupedProducts.length === 1 ? "Unique Outfit" : "Unique Outfits"}
+            {selectedCategory !== "all" && (
+              <span> in <strong style={{ color: "#FFFFFF" }}>{selectedCategory}</strong></span>
+            )}
+          </span>
+        </div>
 
         {/* Cards Grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 26 }}>

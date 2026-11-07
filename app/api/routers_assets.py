@@ -234,6 +234,77 @@ async def upload_asset_image(
     return {"image_url": f"/uploads/{filename}"}
 
 
+def detect_video_extension(content_type: str | None, filename: str | None, contents: bytes) -> str | None:
+    """Detect video extension supporting all standard formats (MP4, WebM, MOV, MKV, OGG, AVI, 3GP)."""
+    ct = (content_type or "").lower().strip()
+    mime_map = {
+        "video/mp4": ".mp4",
+        "video/webm": ".webm",
+        "video/quicktime": ".mov",
+        "video/x-matroska": ".mkv",
+        "video/ogg": ".ogv",
+        "video/x-msvideo": ".avi",
+        "video/mpeg": ".mp4",
+        "video/3gpp": ".3gp",
+    }
+    if ct in mime_map:
+        return mime_map[ct]
+
+    if filename:
+        _, ext = os.path.splitext(filename.lower())
+        if ext in (".mp4", ".webm", ".mov", ".mkv", ".ogv", ".avi", ".m4v", ".3gp"):
+            return ext
+
+    if len(contents) >= 12:
+        if contents[4:8] == b"ftyp":
+            brand = contents[8:12].lower()
+            if brand in (b"isom", b"iso2", b"mp41", b"mp42", b"avc1"):
+                return ".mp4"
+            if brand in (b"qt  ", b"moov"):
+                return ".mov"
+        if contents[:4] == b"\x1a\x45\xdf\xa3":
+            return ".webm"
+
+    if ct.startswith("video/"):
+        subtype = ct.split("/", 1)[1].split(";")[0].strip()
+        subtype = re.sub(r"[^a-zA-Z0-9]", "", subtype)
+        if subtype:
+            return f".{subtype}"
+
+    return None
+
+
+# POST /assets/upload-video - admin/staff uploads a product video file (MP4, WebM, MOV up to 100MB)
+@router.post("/upload-video")
+@limiter.limit("60/minute")
+async def upload_asset_video(
+    request: Request,
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_roles([UserRole.admin, UserRole.staff]))
+):
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail="Uploaded video file is empty")
+
+    if len(contents) > 100 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Video file size cannot exceed 100 MB")
+
+    ext = detect_video_extension(file.content_type, file.filename, contents)
+    if not ext:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported video format. Please upload MP4, WebM, or MOV video file."
+        )
+
+    filename = f"{uuid.uuid4().hex}{ext}"
+    filepath = os.path.join(UPLOAD_DIR, filename)
+
+    with open(filepath, "wb") as buffer:
+        buffer.write(contents)
+
+    return {"video_url": f"/uploads/{filename}"}
+
+
 # POST /assets/ - admin creates assets (single or bulk)
 @router.post("/", response_model=list[AssetResponse], status_code=status.HTTP_201_CREATED)
 @limiter.limit("20/minute")
@@ -278,6 +349,7 @@ async def create_asset(
             sizes=data.sizes or "XS,S,M,L,XL",
             color_variants=data.color_variants,
             gallery_images=data.gallery_images or "[]",
+            video_url=data.video_url,
         )
         db.add(asset)
         created_assets.append(asset)
@@ -402,6 +474,8 @@ async def update_asset(
         asset.color_variants = data.color_variants
     if data.gallery_images is not None:
         asset.gallery_images = data.gallery_images
+    if data.video_url is not None:
+        asset.video_url = data.video_url
 
     db.add(asset)
 
@@ -425,6 +499,7 @@ async def update_asset(
             if data.sizes is not None: sister.sizes = data.sizes
             if data.color_variants is not None: sister.color_variants = data.color_variants
             if data.gallery_images is not None: sister.gallery_images = data.gallery_images
+            if data.video_url is not None: sister.video_url = data.video_url
             db.add(sister)
 
     await db.commit()

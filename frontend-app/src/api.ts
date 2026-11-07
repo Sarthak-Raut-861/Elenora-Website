@@ -82,6 +82,7 @@ function normalizeAsset(asset: Asset): Asset {
     image_url: resolvedMain || asset.image_url,
     gallery_images: resolvedGallery.length > 0 ? JSON.stringify(resolvedGallery) : asset.gallery_images,
     color_variants: resolvedVariants,
+    video_url: resolveMediaUrl(asset.video_url) || asset.video_url,
   }
 }
 
@@ -254,6 +255,7 @@ export const api = {
       sizes?: string | null
       color_variants?: string | null
       gallery_images?: string | null
+      video_url?: string | null
       update_all_units?: boolean
     },
   ) => request<Asset>(`/assets/${assetId}`, { method: 'PATCH', token, body: payload }),
@@ -429,6 +431,30 @@ export const api = {
     }
     const data = await res.json()
     return resolveMediaUrl(data.image_url)
+  },
+
+  uploadVideo: async (token: string, file: File): Promise<string> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch(`${API_BASE_URL}/assets/upload-video`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    })
+    if (!res.ok) {
+      let errMsg = 'Failed to upload video'
+      try {
+        const errData = await res.json()
+        if (errData?.detail) {
+          errMsg = typeof errData.detail === 'string' ? errData.detail : JSON.stringify(errData.detail)
+        }
+      } catch {
+        // fallback
+      }
+      throw new Error(errMsg)
+    }
+    const data = await res.json()
+    return resolveMediaUrl(data.video_url)
   },
 
   // Dry Cleaning

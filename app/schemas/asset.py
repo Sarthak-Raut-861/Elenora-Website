@@ -14,6 +14,7 @@ class AssetCreate(BaseModel):
     sizes: str | None = "XS,S,M,L,XL"
     color_variants: str | None = None
     gallery_images: str | None = None
+    video_url: str | None = None
 
 class AssetUpdate(BaseModel):   
     name: str | None = None
@@ -29,6 +30,7 @@ class AssetUpdate(BaseModel):
     sizes: str | None = None
     color_variants: str | None = None
     gallery_images: str | None = None
+    video_url: str | None = None
     update_all_units: bool | None = False
 
 class AssetStockAdd(BaseModel):
@@ -53,3 +55,4 @@ class AssetResponse(BaseModel):
     sizes: str | None = "XS,S,M,L,XL"
     color_variants: str | None = None
     gallery_images: str | None = None
+    video_url: str | None = None

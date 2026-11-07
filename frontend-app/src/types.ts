@@ -69,6 +69,7 @@ export interface Asset {
   sizes?: string | null
   color_variants?: string | null
   gallery_images?: string | null
+  video_url?: string | null
 }
 
 export interface AssetCreatePayload {
@@ -83,6 +84,7 @@ export interface AssetCreatePayload {
   sizes?: string | null
   color_variants?: string | null
   gallery_images?: string | null
+  video_url?: string | null
 }
 
 export type BookingStatus =

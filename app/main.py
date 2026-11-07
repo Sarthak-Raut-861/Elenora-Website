@@ -49,6 +49,12 @@ async def lifespan(app: FastAPI):
     # Initialize tables if needed (especially for SQLite or initial setup)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Auto-migrate: ensure video_url and other new columns exist on existing tables
+        try:
+            from sqlalchemy import text
+            await conn.execute(text("ALTER TABLE assets ADD COLUMN video_url VARCHAR"))
+        except Exception:
+            pass
 
     # Auto-seed default administrative users if database is newly initialized
     try:

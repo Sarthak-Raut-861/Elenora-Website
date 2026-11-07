@@ -34,6 +34,7 @@ class Asset(Base):
     sizes = Column(String, default="XS,S,M,L,XL", nullable=True)
     color_variants = Column(Text, nullable=True)
     gallery_images = Column(Text, nullable=True, default='[]')
+    video_url = Column(String, nullable=True)
 
     # Relationships
     category = relationship("Category", back_populates="assets")

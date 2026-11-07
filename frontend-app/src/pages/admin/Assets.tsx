@@ -26,6 +26,9 @@ import {
   ChevronUp,
   Layers,
   ShieldCheck,
+  Video,
+  Play,
+  Film,
 } from "lucide-react";
 import React, { useMemo } from "react";
 import { api, request } from "../../api";
@@ -71,6 +74,9 @@ export function AdminAssetsPage() {
   const [formRentalPrice, setFormRentalPrice] = useState<number>(2499);
   const [formSizes, setFormSizes] = useState<string[]>(["XS", "S", "M", "L", "XL"]);
   const [formVariants, setFormVariants] = useState<ColorVariant[]>([]);
+  const [formVideoUrl, setFormVideoUrl] = useState("");
+  const [videoUrlInput, setVideoUrlInput] = useState("");
+  const [uploadingVideo, setUploadingVideo] = useState(false);
 
   const { data: rawAssets = [], isLoading } = useQuery<Asset[]>({
     queryKey: ["admin-assets", token],
@@ -175,6 +181,8 @@ export function AdminAssetsPage() {
     setFormGalleryImages([]);
     setGalleryUrlInput("");
     setFormVariants([]);
+    setFormVideoUrl("");
+    setVideoUrlInput("");
     setShowModal(true);
   };
 
@@ -218,6 +226,8 @@ export function AdminAssetsPage() {
     }
     setFormGalleryImages(initialGallery);
     setGalleryUrlInput("");
+    setFormVideoUrl((asset as any).video_url || "");
+    setVideoUrlInput("");
 
     if (asset.color_variants) {
       try {
@@ -315,6 +325,31 @@ export function AdminAssetsPage() {
     });
   };
 
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingVideo(true);
+    try {
+      const url = await api.uploadVideo(token!, file);
+      setFormVideoUrl(url);
+    } catch (err: any) {
+      alert(err?.message || "Failed to upload video. Please ensure file is MP4, WebM, or MOV under 100MB.");
+    } finally {
+      setUploadingVideo(false);
+      e.target.value = "";
+    }
+  };
+
+  const addVideoUrl = () => {
+    if (!videoUrlInput.trim()) return;
+    setFormVideoUrl(videoUrlInput.trim());
+    setVideoUrlInput("");
+  };
+
+  const removeVideo = () => {
+    setFormVideoUrl("");
+  };
+
   const handleShadeFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, variantIndex: number) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -365,6 +400,7 @@ export function AdminAssetsPage() {
         description: formDesc,
         image_url: primaryCover,
         gallery_images: galleryJson,
+        video_url: formVideoUrl.trim() || null,
         category_id: formCategoryId,
         quantity: formQuantity,
         listing_type: formListingType,
@@ -380,6 +416,7 @@ export function AdminAssetsPage() {
           description: formDesc,
           image_url: primaryCover,
           gallery_images: galleryJson,
+          video_url: formVideoUrl.trim() || null,
           category_id: formCategoryId,
           listing_type: formListingType,
           buy_price: finalBuyPrice,
@@ -2059,6 +2096,165 @@ export function AdminAssetsPage() {
                   <div style={{ color: "#EF4444", fontSize: "0.74rem", marginTop: 10, padding: "8px 12px", background: "rgba(239, 68, 68, 0.12)", border: "1px solid rgba(239, 68, 68, 0.3)", borderRadius: 8, display: "flex", alignItems: "center", gap: 6 }}>
                     <AlertCircle size={14} color="#EF4444" />
                     <span>{formErrors.images}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* ── 1.5 PRODUCT MOTION VIDEO / RUNWAY REEL (OPTIONAL) ── */}
+              <div style={{ borderTop: "1px solid rgba(255, 255, 255, 0.08)", paddingTop: 20 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
+                  <div>
+                    <label style={{ fontSize: "0.76rem", color: "#C9A34A", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: 6 }}>
+                      <Video size={15} color="#C9A34A" />
+                      Product Motion Video / Runway Reel (Optional)
+                    </label>
+                    <span style={{ fontSize: "0.7rem", color: "#888", display: "block", marginTop: 2 }}>
+                      Upload an MP4 / WebM / MOV runway clip or paste a video URL (YouTube, Vimeo, Cloudinary, etc.) to showcase garment motion.
+                    </span>
+                  </div>
+
+                  <label
+                    style={{
+                      background: "linear-gradient(135deg, rgba(201, 163, 74, 0.15), rgba(201, 163, 74, 0.05))",
+                      border: "1.5px solid #C9A34A",
+                      borderRadius: 8,
+                      color: "#E6CA65",
+                      padding: "7px 16px",
+                      fontSize: "0.75rem",
+                      fontWeight: 700,
+                      cursor: uploadingVideo ? "not-allowed" : "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      boxShadow: "0 2px 10px rgba(201, 163, 74, 0.2)",
+                      transition: "all 0.15s ease",
+                    }}
+                  >
+                    <Upload size={14} color="#C9A34A" />
+                    {uploadingVideo ? "Uploading Video..." : "+ Upload Video Clip"}
+                    <input
+                      type="file"
+                      accept="video/mp4,video/webm,video/quicktime,video/*,.mp4,.webm,.mov"
+                      onChange={handleVideoUpload}
+                      disabled={uploadingVideo}
+                      style={{ display: "none" }}
+                    />
+                  </label>
+                </div>
+
+                {/* Video URL Input */}
+                <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+                  <input
+                    type="text"
+                    placeholder="Or paste direct video URL (e.g. https://... or /uploads/... or YouTube/Vimeo)"
+                    value={videoUrlInput}
+                    onChange={(e) => setVideoUrlInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addVideoUrl(); } }}
+                    style={{
+                      flex: 1,
+                      padding: "9px 12px",
+                      borderRadius: 8,
+                      background: "#141414",
+                      border: "1px solid rgba(255, 255, 255, 0.12)",
+                      color: "#FFFFFF",
+                      fontSize: "0.82rem",
+                      outline: "none",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={addVideoUrl}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: 8,
+                      background: "rgba(255,255,255,0.08)",
+                      border: "1px solid rgba(255,255,255,0.18)",
+                      color: "#FFFFFF",
+                      fontSize: "0.75rem",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    + Set Video URL
+                  </button>
+                </div>
+
+                {/* Video Preview Card */}
+                {formVideoUrl ? (
+                  <div
+                    style={{
+                      position: "relative",
+                      borderRadius: 12,
+                      overflow: "hidden",
+                      border: "1.5px solid rgba(201, 163, 74, 0.4)",
+                      background: "#0F0F0F",
+                      padding: 12,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 16,
+                      boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+                    }}
+                  >
+                    <div style={{ width: 140, height: 90, borderRadius: 8, overflow: "hidden", background: "#000", position: "relative", flexShrink: 0 }}>
+                      <video
+                        src={formVideoUrl}
+                        muted
+                        loop
+                        autoPlay
+                        playsInline
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                      <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(0,0,0,0.7)", padding: "2px 6px", borderRadius: 4, fontSize: "0.6rem", color: "#C9A34A", display: "flex", alignItems: "center", gap: 3 }}>
+                        <Play size={10} fill="#C9A34A" /> Motion Video
+                      </div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                        <CheckCircle2 size={14} color="#10B981" />
+                        <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#FFFFFF" }}>Runway Motion Video Attached</span>
+                      </div>
+                      <p style={{ fontSize: "0.72rem", color: "#888", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {formVideoUrl}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={removeVideo}
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: 6,
+                        background: "rgba(220, 38, 38, 0.15)",
+                        border: "1px solid rgba(220, 38, 38, 0.4)",
+                        color: "#EF4444",
+                        fontSize: "0.72rem",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      <Trash2 size={12} /> Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      padding: "16px",
+                      borderRadius: 10,
+                      border: "1px dashed rgba(255, 255, 255, 0.12)",
+                      background: "rgba(255, 255, 255, 0.02)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <span style={{ fontSize: "0.74rem", color: "#777" }}>
+                      No product motion video added yet (optional).
+                    </span>
+                    <span style={{ fontSize: "0.68rem", color: "#C9A34A", letterSpacing: "0.05em" }}>
+                      Supports MP4, WebM, MOV & Direct Links
+                    </span>
                   </div>
                 )}
               </div>

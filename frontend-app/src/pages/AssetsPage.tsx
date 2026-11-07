@@ -15,6 +15,8 @@ import {
   SlidersHorizontal,
   ShoppingBag,
   Tag,
+  Video,
+  Play,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { api } from "../api";
@@ -419,6 +421,28 @@ export function AssetsPage() {
                     >
                       {asset.listing_type === "rent" ? "Rent Vault" : asset.listing_type === "buy" ? "Buy to Own" : "Buy | Rent"}
                     </span>
+
+                    {asset.video_url && (
+                      <span
+                        style={{
+                          padding: "3px 9px",
+                          fontSize: "0.62rem",
+                          fontWeight: 800,
+                          borderRadius: "9999px",
+                          background: "rgba(11, 11, 11, 0.85)",
+                          border: "1px solid rgba(201, 163, 74, 0.5)",
+                          color: "#E6CA65",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 4,
+                          letterSpacing: "0.06em",
+                          textTransform: "uppercase",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
+                        }}
+                      >
+                        <Play size={10} fill="#C9A34A" color="#C9A34A" /> Runway Reel
+                      </span>
+                    )}
 
                     {/* Dynamic Stock Indicator Badge */}
                     {isOutOfStock ? (

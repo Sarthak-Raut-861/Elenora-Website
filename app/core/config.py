@@ -43,4 +43,13 @@ class Settings:
     ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "AdminPassword123!")
     ADMIN_FULL_NAME = os.getenv("ADMIN_FULL_NAME", "Elenora Concierge")
 
+    # Supabase Cloud Storage
+    SUPABASE_URL = os.getenv("SUPABASE_URL", "https://xhbgchyuyigpmkobhtth.supabase.co")
+    SUPABASE_KEY = (
+        os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        or os.getenv("SUPABASE_KEY")
+        or os.getenv("SUPABASE_SECRET_KEY")
+    )
+    SUPABASE_STORAGE_BUCKET = os.getenv("SUPABASE_STORAGE_BUCKET", "product-media")
+
 settings = Settings()

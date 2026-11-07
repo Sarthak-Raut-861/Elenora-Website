@@ -7,6 +7,8 @@ import os
 import uuid
 import shutil
 import io
+import httpx
+from app.core.config import settings
 
 try:
     from PIL import Image, ImageOps
@@ -30,6 +32,46 @@ router = APIRouter(prefix="/assets", tags=["assets"])
 # Standardized uploads folder (ensures consistency between local, container, and cloud environments)
 UPLOAD_DIR = "/tmp/uploads" if os.getenv("VERCEL") else os.path.join(os.getcwd(), "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+async def upload_to_supabase_storage(filename: str, contents: bytes, content_type: str | None = None) -> str | None:
+    """Uploads media file to Supabase Cloud Storage bucket and returns permanent public CDN URL."""
+    supabase_url = (
+        getattr(settings, "SUPABASE_URL", None)
+        or os.getenv("SUPABASE_URL")
+        or "https://xhbgchyuyigpmkobhtth.supabase.co"
+    ).rstrip("/")
+    supabase_key = (
+        getattr(settings, "SUPABASE_KEY", None)
+        or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        or os.getenv("SUPABASE_KEY")
+        or os.getenv("SUPABASE_SECRET_KEY")
+    )
+    bucket = getattr(settings, "SUPABASE_STORAGE_BUCKET", None) or os.getenv("SUPABASE_STORAGE_BUCKET") or "product-media"
+
+    if not supabase_key:
+        return None
+
+    mime = content_type or "application/octet-stream"
+    endpoint = f"{supabase_url}/storage/v1/object/{bucket}/{filename}"
+    headers = {
+        "Authorization": f"Bearer {supabase_key}",
+        "apikey": supabase_key,
+        "Content-Type": mime,
+        "x-upsert": "true",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(endpoint, content=contents, headers=headers)
+            if resp.status_code in (200, 201):
+                public_url = f"{supabase_url}/storage/v1/object/public/{bucket}/{filename}"
+                asset_logger.info(f"Supabase storage upload successful: {public_url}")
+                return public_url
+            else:
+                asset_logger.error(f"Supabase storage upload failed ({resp.status_code}): {resp.text}")
+    except Exception as e:
+        asset_logger.error(f"Supabase storage exception: {e}")
+    return None
 
 
 def detect_image_extension(content_type: str | None, filename: str | None, contents: bytes) -> str | None:
@@ -179,7 +221,12 @@ async def upload_multiple_asset_images(
                 with open(filepath, "wb") as buffer:
                     buffer.write(contents)
 
-            uploaded_urls.append(f"/uploads/{filename}")
+            # Upload to Supabase Cloud Storage for permanent global CDN persistence
+            sb_url = await upload_to_supabase_storage(filename, contents, file.content_type)
+            if sb_url:
+                uploaded_urls.append(sb_url)
+            else:
+                uploaded_urls.append(f"/uploads/{filename}")
         except Exception as e:
             skipped_files.append(f"{file.filename or 'file'} ({str(e)})")
 
@@ -230,6 +277,11 @@ async def upload_asset_image(
     if not saved:
         with open(filepath, "wb") as buffer:
             buffer.write(contents)
+
+    # Upload to Supabase Cloud Storage for permanent global CDN persistence
+    sb_url = await upload_to_supabase_storage(filename, contents, file.content_type)
+    if sb_url:
+        return {"image_url": sb_url}
 
     return {"image_url": f"/uploads/{filename}"}
 
@@ -301,6 +353,11 @@ async def upload_asset_video(
 
     with open(filepath, "wb") as buffer:
         buffer.write(contents)
+
+    # Upload to Supabase Cloud Storage for permanent global CDN persistence
+    sb_url = await upload_to_supabase_storage(filename, contents, file.content_type)
+    if sb_url:
+        return {"video_url": sb_url}
 
     return {"video_url": f"/uploads/{filename}"}
 

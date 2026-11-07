@@ -91,7 +91,7 @@ async def run_migration(supabase_url: str):
             await conn.execute(text("ALTER TABLE assets ADD COLUMN IF NOT EXISTS gallery_images TEXT DEFAULT '[]';"))
         except Exception:
             pass
-    print("  ✓ All 11 tables verified on Supabase.")
+    print("  [OK] All 11 tables verified on Supabase.")
 
     # 2. Extract Data from local SQLite / backup DB
     source_db = "asset_tracking.db" if os.path.exists("asset_tracking.db") else "scratch/asset_tracking_backup.db"
@@ -108,7 +108,7 @@ async def run_migration(supabase_url: str):
     src_assets = [dict(row) for row in sqlite_cur.fetchall()]
     sqlite_conn.close()
 
-    print(f"  ✓ Found {len(src_categories)} categories and {len(src_assets)} assets to migrate.")
+    print(f"  [OK] Found {len(src_categories)} categories and {len(src_assets)} assets to migrate.")
 
     # 3. Migrate Categories
     print("[4/5] Migrating categories and assets to Supabase...")
@@ -256,3 +256,4 @@ if __name__ == "__main__":
         sys.exit(1)
 
     asyncio.run(run_migration(url))
+

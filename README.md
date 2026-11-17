@@ -217,4 +217,4 @@ npm run dev
 
 Designed, developed, and maintained with ❤️ by **[Sarthak Raut](https://github.com/Sarthak-Raut-861)**.
 
-All rights reserved. Proprietary software crafted for the **ELANORA Luxury Boutique** ecosystem.
+All rights reserved. Proprietary software crafted for the **ELANORA Boutique** ecosystem.
